@@ -6,7 +6,7 @@ import {
   getAllAdverts,
   getAdvertBySlug,
   searchAdverts,
-  getAdvertStatusBySlug,
+  // getAdvertStatusBySlug,
   updateAdvertStatus,
   uploadImages,
   getImages,
@@ -22,7 +22,7 @@ const router = express.Router();
 router.get('/', getAllAdverts); // Obtener todos los anuncios
 router.get('/:slug', getAdvertBySlug); // Detalles del anuncio
 router.get('/search', searchAdverts); // Filtro de anuncios
-router.get('/:slug/status', getAdvertStatusBySlug); // Ver estado del anuncio
+// router.get('/:slug/status', getAdvertStatusBySlug); // Ver estado del anuncio       // MARECADO PARA BORRAR
 // Ver anuncios de un usuario específico se encuentra en usersRoutes.js
 router.patch('/:id/status', verifyToken, updateAdvertStatus);  // Cambiar estado y visibilidad del anuncio
 router.post('/:id/picture', verifyToken, upload, uploadImages); // Subir imagenes

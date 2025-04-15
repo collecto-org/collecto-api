@@ -10,16 +10,20 @@ export const getAllAdverts = async (req, res) => {
     const { page = 1, limit = 10, sortBy = 'createdAt' } = req.query; 
 
     const adverts = await Advert.find()
-      .select('title price mainImage status slug') // Ojoooo!!!!!! revisar si hay que añadir más campos para mostrar de la vista de anuncioS
       .sort({ [sortBy]: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
+
+      const totalAdverts = await Advert.countDocuments(); // Consulta del total de anuncios disponibles
 
     if (!adverts.length) {
       return res.status(404).json({ message: 'No se encontraron anuncios' });
     }
 
-    res.status(200).json(adverts);
+    res.status(200).json({
+      total: totalAdverts, // Total de anuncios disponibles
+      adverts,             // Anuncios solicitados con paginación
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener anuncios', error: err.message, stack: err.stack });
   }
@@ -141,19 +145,21 @@ export const searchAdverts = async (req, res) => {
 };
 
 
+// MARCADO PARA BORRAR
+
 // Estado del anuncio (por slug)
-export const getAdvertStatusBySlug = async (req, res) => {
-  const { slug } = req.params;
-  try {
-    const advert = await Advert.findOne({ slug }).select('status');
-    if (!advert) {
-      return res.status(404).json({ message: 'Anuncio no encontrado' });
-    }
-    res.status(200).json({ estado: advert.status });
-  } catch (err) {
-    res.status(500).json({ message: 'Error al obtener el estado del anuncio', error: err.message });
-  }
-};
+//export const getAdvertStatusBySlug = async (req, res) => {
+//  const { slug } = req.params;
+//  try {
+//    const advert = await Advert.findOne({ slug }).select('status');
+//    if (!advert) {
+//      return res.status(404).json({ message: 'Anuncio no encontrado' });
+//    }
+//    res.status(200).json({ estado: advert.status });
+//  } catch (err) {
+//    res.status(500).json({ message: 'Error al obtener el estado del anuncio', error: err.message });
+//  }
+//};
 
 
 // Actualizar estado y visibilidad
