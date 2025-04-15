@@ -21,9 +21,7 @@ export const register = async (req, res) => {
 
   try {
     // Verificar si el usuario ya existe
-    const userExists = await User.findOne({
-      $or: [{ email }, { username }] // Ojo!!!!!! revisar si hay que añadir otro campo que no se repita!!!
-    });
+    const userExists = await User.findOne({ $or: [{ email }, { username }] }); // Ojo!!!!!! revisar si hay que añadir otro campo que no se repita!!!
 
     if (userExists) {
       return res.status(400).json({ message: 'El usuario ya existe' });
@@ -65,8 +63,13 @@ export const register = async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: newUser.email,
+      //Cambiar según queramos que sea el mensaje del asunto:
       subject: 'Verificación de cuenta',
-      text: `Haga clic en el siguiente enlace para verificar su correo: http://localhost:3000/api/auth/verify-email/${emailVerificationToken}`,
+      //Cambiar según queramos que sea el mensaje del mail y cambiar el enlace por el de la app
+      html: `
+        <p>Gracias por registrarte. Por favor, haz clic en el siguiente enlace para verificar tu correo electrónico:</p> 
+        <a href="http://localhost:3000/verify-email/${emailVerificationToken}">Verificar mi correo electrónico</a>
+      `,
     };
 
     // Enviar el correo de verificación
@@ -76,6 +79,20 @@ export const register = async (req, res) => {
         return res.status(500).json({ message: 'Error al enviar correo de verificación' });
       }
       console.log('Correo de verificación enviado:', info.response);
+
+      // Genera el token JWT para autenticación
+      const token = jwt.sign(
+        { id: newUser._id, username: newUser.username },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+      // ENVIA EL TOKEN JWT COMO COOKIE HTTP-ONLY
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 3600000, // la cookie expira en 1 hora (en el caso del signup, por si no se verifica el email)
+        sameSite: 'Strict',
+      });
       
       // Responder solo después de enviar el correo correctamente
       res.status(201).json({
@@ -91,6 +108,7 @@ export const register = async (req, res) => {
     res.status(500).json({ message: 'Error al registrar usuario', error: err.message });
   }
 };
+
 
 
 // Verificacion del correo electronico
@@ -153,12 +171,20 @@ export const login = async (req, res) => {
 
     // Generar JWT expiración de 30 días si se recuerda la sesión, 1h si no
     const expiresIn = rememberMe ? '30d' : '1h';
-
+    // Genera el token JWT para autenticación
     const token = jwt.sign(
       { id: user._id, username: user.username },
-      process.env.JWT_SECRET, // ojo!!
-      { expiresIn }
+      process.env.JWT_SECRET,
+      { expiresIn } // Expira según la opción de "remember me"
     );
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: expiresIn === '30d' ? 30 * 24 * 60 * 60 * 1000 : 3600000, // la cookie expira en 30 días o 1 hora (dependiendo de que marque la opción de recordar sesión)
+      sameSite: 'Strict',
+    });
+
 
     res.status(200).json({
       message: 'Login exitoso',
@@ -237,7 +263,6 @@ export const recoverPassword = async (req, res) => {
 // Verificar el token que recuipera la contraseña
 export const verifyRecoverToken = async (req, res) => {
   const { token } = req.params;
- 
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
