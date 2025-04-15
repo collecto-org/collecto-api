@@ -13,7 +13,7 @@ const router = express.Router();
 
 // Autenticación y gestión de sesión
 router.post('/register', register); // Sign up
-router.post('/verify-email/:token', verifyRegisterEmail); // Verificar el correo
+router.get('/verify-email/:token', verifyRegisterEmail); // Verificar el correo
 
 router.post('/login', login);  // Login (con opción de "Recordar sesión")
 router.post('/logout', logout);  // Logout

@@ -21,7 +21,7 @@ export const register = async (req, res) => {
 
   try {
     // Verificar si el usuario ya existe
-    const userExists = await User.findOne({ $or: [{ email }, { username }] }); // Ojo!!!!!! revisar si hay que añadir otro campo que no se repita!!!
+    const userExists = await User.findOne({ $or: [{ email }, { username }] });
 
     if (userExists) {
       return res.status(400).json({ message: 'El usuario ya existe' });
@@ -130,17 +130,11 @@ export const verifyRegisterEmail = async (req, res) => {
     user.emailVerified = true;
     await user.save();
 
-    res.status(200).json({
-      message: 'Correo electrónico verificado exitosamente',
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email
-      }
-    });
-    
-  } catch (err) {
-    res.status(400).json({ message: 'Token inválido' });
+    // Redirige al frontend a una página de éxito
+    res.redirect('http://localhost:3000/email-verified-success');  // Cambia esta URL quede al final!!
+
+  } catch (error) {
+    res.status(400).send('Token inválido o expirado');
   }
 };
 
