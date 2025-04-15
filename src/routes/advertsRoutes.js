@@ -26,7 +26,7 @@ router.get('/search', searchAdverts); // Filtro de anuncios
 // Ver anuncios de un usuario específico se encuentra en usersRoutes.js
 router.patch('/:id/status', verifyToken, updateAdvertStatus);  // Cambiar estado y visibilidad del anuncio
 router.post('/:id/picture', verifyToken, upload, uploadImages); // Subir imagenes
-router.get('/:id/picture', verifyToken, getImages); // Ver imágenes de un anuncio
+router.get('/:id/picture', getImages); // Ver imágenes de un anuncio
 
 
 // Gestión de usuarios

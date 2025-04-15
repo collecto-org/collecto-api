@@ -10,7 +10,7 @@ const advertSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   transaction: { type: String, required: true },
   status: { type: String, required: true },
-  isVisible: { type: Boolean, default: true },                       // Ojo!!
+  isVisible: { type: Boolean, default: true },
   product_type: { type: String, required: true },
   universe: { type: String, required: true },
   condition: { type: String, required: true },
@@ -25,7 +25,7 @@ const advertSchema = new mongoose.Schema({
 
 // Generación del slug
 advertSchema.pre('save', function(next) {
-  this.slug = slugify(this.title, { lower: true, strict: true });
+  this.slug = slugify(this.title, { lower: true, strict: true })  + `-${timestamp}`; // Añadir timestamp al slug para hacerlo único
   next();
 });
 

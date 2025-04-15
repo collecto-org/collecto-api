@@ -29,7 +29,7 @@ app.use('/api/users', usersRoutes); // Gestión de usuarios
 app.use('/api/orders', orderRoutes); // Ordenes de pedido
 app.use('/api/payments', paymentRoutes); // Pagos
 app.use('/api/shipments', shipmentRoutes); // Envíos
-
+app.use('/images', express.static(path.join(__dirname, 'public', 'images'))); // Servir imágenes estáticas
 
 
 
