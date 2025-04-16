@@ -15,7 +15,6 @@ import {
   deleteAdvert
 } from '../controllers/advertsController.js';
 
-
 const router = express.Router();
 
 // Anuncios
@@ -28,12 +27,9 @@ router.patch('/:id/status', verifyToken, updateAdvertStatus);  // Cambiar estado
 router.post('/:id/picture', verifyToken, upload, uploadImages); // Subir imagenes
 router.get('/:id/picture', getImages); // Ver imágenes de un anuncio
 
-
 // Gestión de usuarios
 router.post('/', verifyToken, upload, createAdvert); // Crear nuevo anuncio
 router.put('/:id', verifyToken, verifyAdvertOwner, editAdvert);  // Editar anuncio
 router.delete('/:id', verifyToken, verifyAdvertOwner, deleteAdvert); // Eliminar anuncio
-
-
 
 export default router;

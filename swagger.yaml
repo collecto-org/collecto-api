@@ -1,0 +1,2263 @@
+openapi: 3.0.0
+info:
+  version: "1.0.0"
+  title: Collecto API
+  description: API de autenticación y gestión de sesión para la plataforma Collecto
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/collecto/Collecto/1.0.0
+  - url: http://localhost:3000
+    description: Servidor de desarrollo local
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Autenticación y gestión de sesión
+      summary: Registra un nuevo usuario en la plataforma
+      description: Crea un nuevo usuario con los datos proporcionados y envía un correo de verificación
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: Nombre de usuario
+                email:
+                  type: string
+                  format: email
+                  description: Correo electrónico del usuario
+                password:
+                  type: string
+                  description: Contraseña del usuario
+                firstName:
+                  type: string
+                  description: Primer nombre
+                lastName:
+                  type: string
+                  description: Apellido
+                phone:
+                  type: string
+                  description: Teléfono de contacto
+                location:
+                  type: string
+                  description: Ubicación del usuario
+                avatarUrl:
+                  type: string
+                  description: URL de la foto de perfil
+                bio:
+                  type: string
+                  description: Biografía del usuario
+                direccionId:
+                  type: string
+                  description: ID de la dirección asociada al usuario
+      responses:
+        '201':
+          description: Usuario registrado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuario registrado. Verifica tu correo para activarlo."
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: ID del usuario
+                      username:
+                        type: string
+                        description: Nombre de usuario
+                      email:
+                        type: string
+                        description: Correo electrónico
+
+  /api/auth/verify-email/{token}:
+    get:
+      tags:
+        - Autenticación y gestión de sesión
+      summary: Verifica el correo electrónico del usuario
+      description: Verifica el token de verificación de correo electrónico enviado durante el registro
+      operationId: verifyRegisterEmail
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Token de verificación enviado por correo electrónico
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Correo verificado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Correo verificado correctamente. Redirigiendo a la página de éxito."
+        '400':
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token inválido o expirado"
+        '404':
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuario no encontrado"
+
+
+  /api/auth/login:
+    post:
+      tags:
+        - Autenticación y gestión de sesión
+      summary: Inicia sesión con un usuario existente
+      description: Realiza el login de un usuario utilizando el nombre de usuario y la contraseña
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: Nombre de usuario
+                password:
+                  type: string
+                  description: Contraseña del usuario
+                rememberMe:
+                  type: boolean
+                  description: Opción para recordar la sesión
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login exitoso"
+                  token:
+                    type: string
+                    description: JWT token generado para la sesión
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      username:
+                        type: string
+                      email:
+                        type: string
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Autenticación y gestión de sesión
+      summary: Cierra la sesión de un usuario
+      description: Elimina el token de autenticación y cierra la sesión del usuario
+      operationId: logout
+      responses:
+        '200':
+          description: Sesión cerrada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Sesión cerrada correctamente"
+
+  /api/auth/recover:
+    post:
+      tags:
+        - Autenticación y gestión de sesión
+      summary: Inicia la recuperación de contraseña para un usuario
+      description: Envía un correo con un enlace para recuperar la contraseña
+      operationId: recoverPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Correo electrónico del usuario
+      responses:
+        '200':
+          description: Correo de recuperación enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Correo de recuperación enviado"
+
+  /api/auth/recover/{token}:
+    post:
+      tags:
+        - Autenticación y gestión de sesión
+      summary: Verifica el token de recuperación de contraseña
+      description: Verifica el token de recuperación de contraseña antes de restablecerla
+      operationId: verifyRecoverToken
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token de recuperación válido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token de recuperación válido"
+                  userId:
+                    type: string
+                    description: ID del usuario asociado al token
+
+  /api/auth/reset/{token}:
+    post:
+      tags:
+        - Autenticación y gestión de sesión
+      summary: Restablece la contraseña de un usuario
+      description: Permite restablecer la contraseña de un usuario utilizando un token válido
+      operationId: resetPassword
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                  description: Nueva contraseña del usuario
+      responses:
+        '200':
+          description: Contraseña restablecida correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Contraseña actualizada y correo de confirmación enviado"
+
+  /api/adverts:
+    get:
+      tags:
+        - Anuncios
+      summary: Obtener todos los anuncios (con paginación y filtros)
+      description: Obtiene una lista de anuncios con opción de paginación, filtros y el estado de favoritos si el usuario está autenticado
+      operationId: getAllAdverts
+      parameters:
+        - name: page
+          in: query
+          description: Página de resultados (por defecto 1)
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Número máximo de resultados por página (por defecto 10)
+          schema:
+            type: integer
+            default: 10
+        - name: sortBy
+          in: query
+          description: Criterio de ordenación (por defecto "createdAt")
+          schema:
+            type: string
+            default: "createdAt"
+      responses:
+        '200':
+          description: Lista de anuncios con estado de favoritos (si el usuario está autenticado)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: Total de anuncios disponibles
+                  adverts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: ID del anuncio
+                        title:
+                          type: string
+                          description: Título del anuncio
+                        description:
+                          type: string
+                          description: Descripción del anuncio
+                        price:
+                          type: number
+                          format: double
+                          description: Precio del artículo
+                        isFavorite:
+                          type: boolean
+                          description: Indica si el anuncio es favorito del usuario autenticado
+        '404':
+          description: No se encontraron anuncios
+        '500':
+          description: Error interno en el servidor
+
+
+  /api/adverts/{slug}:
+    get:
+      tags:
+        - Anuncios
+      summary: Obtiene los detalles de un anuncio por slug
+      description: Devuelve un anuncio específico utilizando su slug
+      operationId: getAdvertBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Slug único del anuncio
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles del anuncio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Advert'
+        '404':
+          description: Anuncio no encontrado
+
+  /api/adverts/search:
+    get:
+      tags:
+        - Anuncios
+      summary: Buscar anuncios con filtros
+      description: Permite buscar anuncios con diversos filtros como título, precio, estado, etc. Si el usuario está autenticado, incluye el estado de favoritos
+      operationId: searchAdverts
+      parameters:
+        - name: title
+          in: query
+          description: Título del anuncio (filtro)
+          schema:
+            type: string
+        - name: priceMin
+          in: query
+          description: Precio mínimo del artículo
+          schema:
+            type: number
+            format: double
+        - name: priceMax
+          in: query
+          description: Precio máximo del artículo
+          schema:
+            type: number
+            format: double
+        - name: tags
+          in: query
+          description: Filtra anuncios por etiquetas (separadas por coma)
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Estado del anuncio (disponible, reservado, vendido)
+          schema:
+            type: string
+        - name: transaction
+          in: query
+          description: Tipo de transacción (compra o venta)
+          schema:
+            type: string
+        - name: collection
+          in: query
+          description: Filtra por colección del anuncio
+          schema:
+            type: string
+        - name: createdAtMin
+          in: query
+          description: Fecha de creación mínima
+          schema:
+            type: string
+            format: date
+        - name: createdAtMax
+          in: query
+          description: Fecha de creación máxima
+          schema:
+            type: string
+            format: date
+        - name: brand
+          in: query
+          description: Marca del producto
+          schema:
+            type: string
+        - name: product_type
+          in: query
+          description: Tipo de producto
+          schema:
+            type: string
+        - name: universe
+          in: query
+          description: Universo del artículo (por ejemplo, Marvel, Star Wars, etc.)
+          schema:
+            type: string
+        - name: condition
+          in: query
+          description: Condición del artículo (nuevo, usado, etc.)
+          schema:
+            type: string
+        - name: slug
+          in: query
+          description: Filtro por slug del anuncio
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Página de resultados (por defecto 1)
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Número máximo de resultados por página (por defecto 10)
+          schema:
+            type: integer
+            default: 10
+        - name: sortBy
+          in: query
+          description: Criterio de ordenación (por defecto "createdAt")
+          schema:
+            type: string
+            default: "createdAt"
+        - name: sortOrder
+          in: query
+          description: Orden de clasificación (-1 para descendente, 1 para ascendente)
+          schema:
+            type: integer
+            default: -1
+      responses:
+        '200':
+          description: Lista de anuncios con estado de favoritos si el usuario está autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adverts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: ID del anuncio
+                        title:
+                          type: string
+                          description: Título del anuncio
+                        description:
+                          type: string
+                          description: Descripción del anuncio
+                        price:
+                          type: number
+                          format: double
+                          description: Precio del artículo
+                        isFavorite:
+                          type: boolean
+                          description: Indica si el anuncio es favorito del usuario autenticado
+        '404':
+          description: No se encontraron anuncios
+        '500':
+          description: Error interno en el servidor
+
+
+  /api/users/{username}/listings:
+    get:
+      tags:
+        - Anuncios
+      summary: Ver anuncios de un usuario
+      description: Obtiene los anuncios de un usuario específico. Si el usuario está autenticado, incluye el estado de favoritos en los anuncios
+      operationId: getUserAdverts
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Nombre de usuario del cual obtener los anuncios
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de anuncios del usuario con estado de favoritos si el usuario está autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: Total de anuncios del usuario
+                  adverts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: ID del anuncio
+                        title:
+                          type: string
+                          description: Título del anuncio
+                        description:
+                          type: string
+                          description: Descripción del anuncio
+                        price:
+                          type: number
+                          format: double
+                          description: Precio del artículo
+                        isFavorite:
+                          type: boolean
+                          description: Indica si el anuncio es favorito del usuario autenticado
+        '404':
+          description: Usuario no encontrado o sin anuncios
+        '500':
+          description: Error interno en el servidor
+
+  /api/adverts/{id}/status:
+    patch:
+      tags:
+        - Anuncios
+      summary: Cambiar el estado y visibilidad de un anuncio
+      description: Permite cambiar el estado del anuncio (disponible, reservado, vendido) y su visibilidad
+      operationId: updateAdvertStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del anuncio
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - disponible
+                    - reservado
+                    - vendido
+      responses:
+        '200':
+          description: Estado del anuncio actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "El estado del anuncio ha sido cambiado a vendido"
+                  advert:
+                    $ref: '#/components/schemas/Advert'
+        '404':
+          description: Anuncio no encontrado
+        '403':
+          description: No tienes permiso para editar este anuncio
+
+  /api/adverts/{id}/picture:
+    post:
+      tags:
+        - Anuncios
+      summary: Subir imágenes para un anuncio
+      description: Permite subir imágenes para un anuncio
+      operationId: uploadImages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del anuncio
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Imágenes subidas correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Imágenes subidas correctamente"
+                  images:
+                    type: array
+                    items:
+                      type: string
+        '404':
+          description: Anuncio no encontrado
+
+  /api/adverts/{id}/picturee:
+    get:
+      tags:
+        - Anuncios
+      summary: Obtener imágenes de un anuncio
+      description: Devuelve todas las imágenes asociadas a un anuncio
+      operationId: getImages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del anuncio
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Imágenes del anuncio
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  images:
+                    type: array
+                    items:
+                      type: string
+                      description: URL de la imagen
+        '404':
+          description: Anuncio no encontrado
+
+  /api/users/me:
+    get:
+      tags:
+        - Usuarios
+      summary: Obtener datos del propio usuario
+      description: Devuelve los datos del usuario autenticado
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Datos del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  firstName:
+                    type: string
+                  lastName:
+                    type: string
+                  phone:
+                    type: string
+                  location:
+                    type: string
+                  avatarUrl:
+                    type: string
+                  bio:
+                    type: string
+        '404':
+          description: Usuario no encontrado
+
+  /api/users/mee:
+    put:
+      tags:
+        - Usuarios
+      summary: Editar perfil del usuario
+      description: Permite editar los datos del usuario autenticado
+      operationId: editUserProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phone:
+                  type: string
+                location:
+                  type: string
+                avatarUrl:
+                  type: string
+                bio:
+                  type: string
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Perfil actualizado"
+                  user:
+                    $ref: '#/components/schemas/User'
+        '404':
+          description: Usuario no encontrado
+
+  /api/userse/me:
+    delete:
+      tags:
+        - Usuarios
+      summary: Eliminar perfil del usuario
+      description: Elimina el perfil del usuario autenticado
+      operationId: deleteUserProfile
+      responses:
+        '200':
+          description: Cuenta eliminada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cuenta eliminada"
+        '404':
+          description: Usuario no encontrado
+
+  /api/users/me/adverts:
+    get:
+      tags:
+        - Anuncios
+      summary: Ver anuncios de uno mismo
+      description: Obtiene los anuncios del usuario autenticado. Incluye el total de anuncios publicados.
+      operationId: getOwnAdverts
+      responses:
+        '200':
+          description: Lista de anuncios del usuario autenticado, incluyendo el total de anuncios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalAdverts:
+                    type: integer
+                    description: Total de anuncios publicados por el usuario
+                  adverts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: ID del anuncio
+                        title:
+                          type: string
+                          description: Título del anuncio
+                        description:
+                          type: string
+                          description: Descripción del anuncio
+                        price:
+                          type: number
+                          format: double
+                          description: Precio del artículo
+        '404':
+          description: Usuario no encontrado o sin anuncios
+        '500':
+          description: Error interno en el servidor
+
+  /api/advrets:
+    post:
+      tags:
+        - Usuarios
+      summary: Crear un nuevo anuncio
+      description: Crea un anuncio para el usuario autenticado
+      operationId: createAdvert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                  format: double
+                transaction:
+                  type: string
+                  enum:
+                    - venta
+                    - compra
+                status:
+                  type: string
+                  enum:
+                    - disponible
+                    - reservado
+                    - vendido
+                product_type:
+                  type: string
+                universe:
+                  type: string
+                condition:
+                  type: string
+                  enum:
+                    - nuevo
+                    - usado
+                    - roto
+                collection:
+                  type: string
+                brand:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Anuncio creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Anuncio creado"
+                  advert:
+                    $ref: '#/components/schemas/Advert'
+        '400':
+          description: Faltan campos obligatorios
+
+  /api/adverts/{id}:
+    get:
+      tags:
+        - Usuarios
+      summary: Obtener un anuncio específico
+      description: Devuelve los detalles de un anuncio específico
+      operationId: getAdvertById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del anuncio
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles del anuncio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Advert'
+        '404':
+          description: Anuncio no encontrado
+
+  /api/adveerts/{id}:
+    put:
+      tags:
+        - Usuarios
+      summary: Editar un anuncio
+      description: Permite editar un anuncio creado por el usuario autenticado
+      operationId: editAdvert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del anuncio
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                  format: double
+                transaction:
+                  type: string
+                  enum:
+                    - venta
+                    - compra
+                status:
+                  type: string
+                  enum:
+                    - disponible
+                    - reservado
+                    - vendido
+                product_type:
+                  type: string
+                universe:
+                  type: string
+                condition:
+                  type: string
+                  enum:
+                    - nuevo
+                    - usado
+                    - roto
+                collection:
+                  type: string
+                brand:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Anuncio actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Anuncio actualizado"
+                  advert:
+                    $ref: '#/components/schemas/Advert'
+        '404':
+          description: Anuncio no encontrado
+        '403':
+          description: No tienes permiso para editar este anuncio
+
+  /api/advertes/{id}:
+    delete:
+      tags:
+        - Usuarios
+      summary: Eliminar un anuncio
+      description: Elimina un anuncio creado por el usuario autenticado
+      operationId: deleteAdvert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del anuncio
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Anuncio eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Anuncio eliminado"
+        '404':
+          description: Anuncio no encontrado
+        '403':
+          description: No tienes permiso para eliminar este anuncio
+
+  /api/users/me/favorites:
+    get:
+      tags:
+        - Favoritos
+      summary: Obtener "Mis anuncios favoritos"
+      description: Obtiene los anuncios favoritos del usuario autenticado. Incluye el total de favoritos.
+      operationId: getUserFavorites
+      responses:
+        '200':
+          description: Lista de anuncios favoritos del usuario, incluyendo el total de favoritos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalFavorites:
+                    type: integer
+                    description: Total de anuncios favoritos del usuario
+                  favorites:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: ID del anuncio favorito
+                        title:
+                          type: string
+                          description: Título del anuncio favorito
+                        description:
+                          type: string
+                          description: Descripción del anuncio favorito
+                        price:
+                          type: number
+                          format: double
+                          description: Precio del artículo favorito
+        '404':
+          description: Usuario no encontrado o sin favoritos
+        '500':
+          description: Error interno en el servidor
+
+  /api/users/me/favorites/{listingId}:
+    post:
+      tags:
+        - Favoritos
+      summary: Agregar un anuncio a favoritos
+      description: Permite agregar un anuncio a la lista de favoritos del usuario
+      operationId: addFavorite
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          description: ID del anuncio a agregar a favoritos
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Anuncio agregado a favoritos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Añadido a favoritos"
+        '404':
+          description: Anuncio no encontrado
+        '400':
+          description: El anuncio ya está en tus favoritos
+
+  /api/users/me/favoirtes/{listingId}:
+    delete:
+      tags:
+        - Favoritos
+      summary: Eliminar un anuncio de favoritos
+      description: Permite eliminar un anuncio de la lista de favoritos del usuario
+      operationId: removeFavorite
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          description: ID del anuncio a eliminar de favoritos
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Anuncio eliminado de favoritos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Eliminado de favoritos"
+        '404':
+          description: Anuncio no encontrado
+        '400':
+          description: El anuncio no está en tus favoritos
+
+  /api/users/me/notifications:
+    get:
+      tags:
+        - Notificaciones
+      summary: Obtener "Mis notificaciones"
+      description: Devuelve todas las notificaciones del usuario autenticado
+      operationId: getUserNotifications
+      responses:
+        '200':
+          description: Lista de notificaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        '404':
+          description: No tienes notificaciones
+
+  /api/users/me/notifications/{id}/read:
+    patch:
+      tags:
+        - Notificaciones
+      summary: Marcar notificación como leída
+      description: Permite marcar una notificación como leída
+      operationId: markNotificationAsRead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la notificación a marcar como leída
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notificación marcada como leída
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Leída"
+        '404':
+          description: Notificación no encontrada
+        '403':
+          description: No tienes permiso para modificar esta notificación
+
+  /api/users/me/notifications/favorite-status-change:
+    post:
+      tags:
+        - Notificaciones
+      summary: Notificación de cambio de estado de favorito
+      description: Crea una notificación cuando el estado de un anuncio favorito cambia (vendido/reservado/disponible)
+      operationId: notifyFavoriteStatusChange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                advertId:
+                  type: string
+                status:
+                  type: string
+                  enum: ['sold', 'reserved', 'available']
+      responses:
+        '201':
+          description: Notificación de cambio de estado de favorito creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Notificación de cambio de estado de favorito creada"
+        '400':
+          description: Estado inválido
+
+  /api/users/me/notifications/favorite-price-change:
+    post:
+      tags:
+        - Notificaciones
+      summary: Notificación de cambio de precio de favorito
+      description: Crea una notificación cuando el precio de un anuncio favorito cambia
+      operationId: notifyPriceChange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                advertId:
+                  type: string
+      responses:
+        '201':
+          description: Notificación de cambio de precio enviada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Notificación de cambio de precio enviada"
+        '404':
+          description: Anuncio no encontrado
+
+  /api/users/me/notifications/favorite-removed:
+    post:
+      tags:
+        - Notificaciones
+      summary: Notificación de eliminación de favorito
+      description: Crea una notificación cuando un anuncio es eliminado de favoritos
+      operationId: notifyFavoriteRemoved
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                advertId:
+                  type: string
+      responses:
+        '201':
+          description: Notificación de eliminación de favorito enviada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Notificación de eliminación de favorito enviada"
+        '404':
+          description: Anuncio no encontrado
+
+  /api/users/me/notifications/new-chat-message:
+    post:
+      tags:
+        - Notificaciones
+      summary: Notificación de nuevo mensaje en el chat
+      description: Crea una notificación cuando un nuevo mensaje es enviado en un chat
+      operationId: notifyNewChatMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chatId:
+                  type: string
+      responses:
+        '201':
+          description: Notificación de nuevo mensaje enviada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Notificación de nuevo mensaje enviada"
+        '404':
+          description: Chat no encontrado
+
+  /api/users/me/chat/{listingId}:
+    post:
+      tags:
+        - Chat
+      summary: Crear un chat relacionado con un anuncio
+      description: Crea un nuevo chat entre el usuario autenticado y el vendedor del anuncio
+      operationId: createChat
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          description: ID del anuncio relacionado con el chat
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Chat creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Chat creado exitosamente"
+                  chatId:
+                    type: string
+        '404':
+          description: Anuncio no encontrado
+        '400':
+          description: No puedes chatear contigo mismo
+
+  /api/users/me/chat/{chatId}:
+    post:
+      tags:
+        - Chat
+      summary: Enviar un mensaje en un chat
+      description: Permite al usuario autenticado enviar un mensaje en un chat existente
+      operationId: sendMessageToChat
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: ID del chat en el que se enviará el mensaje
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Contenido del mensaje
+      responses:
+        '201':
+          description: Mensaje enviado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Mensaje enviado"
+        '404':
+          description: Chat no encontrado
+        '403':
+          description: No tienes permiso para enviar mensajes en este chat
+
+  /api/users/me/chat:
+    get:
+      tags:
+        - Chat
+      summary: Obtener todas las conversaciones del usuario
+      description: Devuelve todas las conversaciones en las que el usuario autenticado está involucrado
+      operationId: getUserChats
+      responses:
+        '200':
+          description: Lista de conversaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    chatId:
+                      type: string
+                    advertTitle:
+                      type: string
+                    participants:
+                      type: array
+                      items:
+                        type: string
+                    lastMessage:
+                      type: string
+                    lastMessageTimestamp:
+                      type: string
+                      format: date-time
+        '404':
+          description: No tienes conversaciones
+
+  /api/users/me/cht/{chatId}:
+    get:
+      tags:
+        - Chat
+      summary: Ver los mensajes de un chat
+      description: Muestra todos los mensajes de un chat específico en el que el usuario autenticado está involucrado
+      operationId: getChatMessages
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: ID del chat del cual se obtendrán los mensajes
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de mensajes del chat
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sender:
+                      type: string
+                    content:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time
+        '404':
+          description: Chat no encontrado
+        '403':
+          description: No tienes permiso para ver este chat
+
+  /api/orders:
+    post:
+      tags:
+        - Ordenes
+      summary: Crear una nueva orden
+      description: Permite crear una nueva orden de compra o venta
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                advertId:
+                  type: string
+                  description: ID del anuncio que se quiere comprar o vender
+      responses:
+        '201':
+          description: Orden creada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Orden creada"
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '400':
+          description: El anuncio no está disponible para compra
+        '404':
+          description: Anuncio no encontrado
+
+  /api/orders/{id}:
+    get:
+      tags:
+        - Ordenes
+      summary: Obtener detalles de una orden
+      description: Permite obtener los detalles de una orden mediante su ID
+      operationId: getOrderDetails
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la orden
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles de la orden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '404':
+          description: Orden no encontrada
+
+  /api/orders/{id}/status:
+    patch:
+      tags:
+        - Ordenes
+      summary: Actualizar estado de la orden
+      description: Permite actualizar el estado de una orden (ej. pendiente, pagado, enviado)
+      operationId: updateOrderStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la orden
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled']
+                  description: Nuevo estado de la orden
+      responses:
+        '200':
+          description: Estado de la orden actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Estado de la orden actualizado"
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '400':
+          description: Estado inválido
+        '404':
+          description: Orden no encontrada
+        '403':
+          description: No tienes permiso para actualizar el estado de esta orden
+
+  /api/ordres/{id}:
+    delete:
+      tags:
+        - Ordenes
+      summary: Cancelar una orden
+      description: Permite cancelar una orden existente
+      operationId: cancelOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la orden
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Orden cancelada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Orden cancelada"
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '400':
+          description: Solo se pueden cancelar las órdenes en estado "pending"
+        '404':
+          description: Orden no encontrada
+        '403':
+          description: No tienes permiso para cancelar esta orden
+
+  /api/orders/me:
+    get:
+      tags:
+        - Ordenes
+      summary: Obtener todas las órdenes del usuario autenticado
+      description: Devuelve todas las órdenes de compra y venta asociadas al usuario autenticado
+      operationId: getAllUserOrders
+      responses:
+        '200':
+          description: Lista de órdenes del usuario
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '404':
+          description: No tienes órdenes
+
+  /api/payments:
+    post:
+      tags:
+        - Pagos
+      summary: Iniciar un pago
+      description: Permite iniciar un pago para una orden pendiente
+      operationId: initiatePayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                  description: ID de la orden a pagar
+                paymentMethodID:
+                  type: string
+                  description: ID del método de pago
+                amount:
+                  type: number
+                  format: double
+                  description: Monto del pago
+                currency:
+                  type: string
+                  description: Moneda del pago
+      responses:
+        '201':
+          description: Pago iniciado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Compra realizada"
+                  pago:
+                    $ref: '#/components/schemas/Payment'
+        '400':
+          description: Orden no disponible para pago o método de pago no disponible
+        '404':
+          description: Orden no encontrada
+
+  /api/payments/{id}:
+    get:
+      tags:
+        - Pagos
+      summary: Obtener detalles de un pago
+      description: Permite obtener los detalles de un pago mediante su ID
+      operationId: getPaymentDetails
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del pago
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles del pago
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pago:
+                    $ref: '#/components/schemas/Payment'
+        '404':
+          description: Pago no encontrado
+
+  /api/payments/status/{paymentId}:
+    get:
+      tags:
+        - Pagos
+      summary: Consultar el estado de un pago
+      description: Permite consultar el estado de un pago mediante su ID
+      operationId: getPaymentStatus
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          description: ID del pago a consultar
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Estado del pago
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: Estado del pago
+                  message:
+                    type: string
+                    example: "Pago procesado correctamente"
+        '404':
+          description: Pago no encontrado
+
+  /api/payments/my-purchases:
+    get:
+      tags:
+        - Pagos
+      summary: Ver "Mis compras"
+      description: Devuelve los pagos asociados a las compras realizadas por el usuario autenticado
+      operationId: getMyPurchases
+      responses:
+        '200':
+          description: Lista de compras realizadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+        '404':
+          description: No tienes compras realizadas
+
+  /api/payments/my-sales:
+    get:
+      tags:
+        - Pagos
+      summary: Ver "Mis ventas"
+      description: Devuelve los pagos asociados a las ventas realizadas por el usuario autenticado
+      operationId: getMySales
+      responses:
+        '200':
+          description: Lista de ventas realizadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payment'
+        '404':
+          description: No has realizado ventas
+
+  /api/payments/confirmation:
+    post:
+      tags:
+        - Pagos
+      summary: Confirmar un pago
+      description: Confirma el pago realizado a través de la pasarela de pagos (ej. MercadoPago)
+      operationId: confirmPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentId:
+                  type: string
+                  description: ID del pago a confirmar
+                transactionId:
+                  type: string
+                  description: ID de la transacción asociada al pago
+                paymentStatus:
+                  type: string
+                  enum: ['succeeded', 'failed', 'cancelled']
+                  description: Estado final del pago
+      responses:
+        '200':
+          description: Pago confirmado y procesado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Pago confirmado y procesado correctamente"
+        '404':
+          description: Pago no encontrado
+        '400':
+          description: El transactionId no coincide o el estado del pago no fue proporcionado
+
+  /api/shipments:
+    post:
+      tags:
+        - Envios
+      summary: Crear un nuevo envío
+      description: Permite crear un envío para una orden pagada
+      operationId: createShipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                  description: ID de la orden asociada al envío
+                shippingProviderId:
+                  type: string
+                  description: ID del proveedor de envío
+                trackingCode:
+                  type: string
+                  description: Código de seguimiento del envío
+                estimatedDate:
+                  type: string
+                  format: date
+                  description: Fecha estimada de entrega
+      responses:
+        '201':
+          description: Envío creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Envío iniciado"
+                  shipment:
+                    $ref: '#/components/schemas/Shipment'
+        '404':
+          description: Orden o proveedor de envío no encontrado
+        '400':
+          description: La orden no ha sido pagada
+
+  /api/shipments/me/{id}:
+    get:
+      tags:
+        - Envios
+      summary: Obtener detalles del envío
+      description: Permite obtener los detalles del envío asociado a un ID de orden
+      operationId: getShipmentDetails
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del envío
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles del envío
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shipment:
+                    $ref: '#/components/schemas/Shipment'
+        '404':
+          description: Envío no encontrado
+
+  /api/shipments/me/{id}/status:
+    patch:
+      tags:
+        - Envios
+      summary: Actualizar estado del envío
+      description: Permite actualizar el estado de un envío (en tránsito, entregado, pendiente, cancelado)
+      operationId: updateShipmentStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del envío
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: ['en tránsito', 'entregado', 'pendiente', 'cancelado']
+                  description: Nuevo estado del envío
+      responses:
+        '200':
+          description: Estado del envío actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Estado del envío actualizado"
+                  shipment:
+                    $ref: '#/components/schemas/Shipment'
+        '400':
+          description: Estado inválido
+        '404':
+          description: Envío no encontrado
+
+  /api/shipments/history:
+    post:
+      tags:
+        - Envios
+      summary: Agregar actualización al historial de envío
+      description: Permite agregar una actualización al historial de un envío
+      operationId: addToShipmentHistory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shipmentId:
+                  type: string
+                  description: ID del envío al que se agregará la actualización
+                status:
+                  type: string
+                  description: Estado del envío en el momento de la actualización
+                details:
+                  type: string
+                  description: Detalles de la actualización del envío
+      responses:
+        '201':
+          description: Actualización del historial agregada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Historial actualizado"
+                  shipment:
+                    $ref: '#/components/schemas/Shipment'
+        '404':
+          description: Envío no encontrado
+
+  /api/shipments/me/{id}/history:
+    get:
+      tags:
+        - Envios
+      summary: Obtener historial de actualizaciones del envío
+      description: Permite obtener el historial de actualizaciones de un envío
+      operationId: getShipmentHistory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del envío
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Historial de actualizaciones del envío
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        date:
+                          type: string
+                          format: date-time
+                        details:
+                          type: string
+        '404':
+          description: Envío no encontrado
+
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID del usuario
+        username:
+          type: string
+          description: Nombre de usuario
+        email:
+          type: string
+          description: Correo electrónico
+        firstName:
+          type: string
+          description: Primer nombre del usuario
+        lastName:
+          type: string
+          description: Apellido del usuario
+        phone:
+          type: string
+          description: Teléfono del usuario
+        location:
+          type: string
+          description: Ubicación del usuario
+        avatarUrl:
+          type: string
+          description: URL de la imagen de perfil del usuario
+        bio:
+          type: string
+          description: Biografía del usuario
+
+    Advert:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID del anuncio
+        title:
+          type: string
+          description: Título del anuncio
+        description:
+          type: string
+          description: Descripción del anuncio
+        price:
+          type: number
+          format: double
+          description: Precio del artículo
+        transaction:
+          type: string
+          description: Tipo de transacción (compra o venta)
+        status:
+          type: string
+          description: Estado del anuncio (disponible, reservado, vendido)
+        images:
+          type: array
+          items:
+            type: string
+            description: URL de la imagen del anuncio
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del anuncio
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de la última actualización del anuncio
+
+    Chat:
+      type: object
+      properties:
+        advertId:
+          type: string
+          description: ID del anuncio asociado al chat
+        users:
+          type: array
+          items:
+            type: string
+          description: IDs de los usuarios en el chat
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              sender:
+                type: string
+                description: ID del usuario que envió el mensaje
+              content:
+                type: string
+                description: Contenido del mensaje
+              createdAt:
+                type: string
+                format: date-time
+                description: Fecha en que se envió el mensaje
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha en que se creó el chat
+
+    Notification:
+      type: object
+      properties:
+        user:
+          type: string
+          description: ID del usuario al que se le envió la notificación
+        notificationType:
+          type: string
+          description: Tipo de notificación
+        advertId:
+          type: string
+          description: ID del anuncio relacionado con la notificación
+        message:
+          type: string
+          description: Mensaje de la notificación
+        isRead:
+          type: boolean
+          description: Estado de lectura de la notificación
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha en que se creó la notificación
+
+    Order:
+      type: object
+      properties:
+        buyerId:
+          type: string
+          description: ID del comprador
+        sellerId:
+          type: string
+          description: ID del vendedor
+        advertId:
+          type: string
+          description: ID del anuncio relacionado
+        price:
+          type: number
+          format: double
+          description: Precio del pedido
+        commission:
+          type: number
+          format: double
+          description: Comisión asociada al pedido
+        paymentStatus:
+          type: string
+          enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled']
+          description: Estado del pago
+        paymentID:
+          type: string
+          description: ID del pago asociado
+        shippingMethod:
+          type: string
+          description: Método de envío
+        shippingAddress:
+          type: string
+          description: Dirección de envío
+        trackingCode:
+          type: string
+          description: Código de seguimiento
+        notes:
+          type: string
+          description: Notas adicionales
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del pedido
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de la última actualización del pedido
+
+    Payment:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: ID del pedido asociado
+        userId:
+          type: string
+          description: ID del usuario que realizó el pago
+        providersId:
+          type: string
+          description: ID del proveedor de pago
+        transactionId:
+          type: string
+          description: ID de la transacción
+        statusId:
+          type: string
+          enum: ['pending', 'succeeded', 'failed', 'refunded']
+          description: Estado del pago
+        paymentMethodID:
+          type: string
+          description: ID del método de pago
+        amount:
+          type: number
+          format: double
+          description: Monto del pago
+        currency:
+          type: string
+          description: Moneda del pago
+        paidAt:
+          type: string
+          format: date-time
+          description: Fecha en que se realizó el pago
+        receiptUrl:
+          type: string
+          description: URL del recibo de pago
+        rawResponse:
+          type: object
+          description: Respuesta cruda del pago
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del pago
+
+    PaymentMethod:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Código del método de pago
+        label:
+          type: string
+          description: Etiqueta del método de pago
+        order:
+          type: integer
+          description: Orden de aparición del método de pago
+        active:
+          type: boolean
+          description: Indica si el método de pago está activo
+
+    Provider:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Código del proveedor
+        label:
+          type: string
+          description: Nombre del proveedor
+        order:
+          type: integer
+          description: Orden de aparición del proveedor
+        active:
+          type: boolean
+          description: Indica si el proveedor está activo
+
+    Shipment:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: ID del pedido asociado
+        shippingProviderId:
+          type: string
+          description: ID del proveedor de envío
+        trackingCode:
+          type: string
+          description: Código de seguimiento
+        currentStatus:
+          type: string
+          description: Estado actual del envío
+        estimatedDate:
+          type: string
+          format: date-time
+          description: Fecha estimada de entrega
+        deliveredAt:
+          type: string
+          format: date-time
+          description: Fecha de entrega
+        history:
+          type: array
+          items:
+            type: object
+          description: Historial de eventos del envío
+        trackingUrl:
+          type: string
+          description: URL de seguimiento
+
+    ShippingProvider:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Código del proveedor de envío
+        label:
+          type: string
+          description: Nombre del proveedor de envío
+        trackingUrl:
+          type: string
+          description: URL de seguimiento del proveedor
+        apiIntegration:
+          type: boolean
+          description: Indica si hay integración con la API del proveedor
+        active:
+          type: boolean
+          description: Indica si el proveedor está activo

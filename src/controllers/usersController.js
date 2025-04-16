@@ -4,10 +4,9 @@ import Notification from '../models/notification.js';
 import Chat from '../models/chat.js';
 
 
-
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
 export const getUserAdverts = async (req, res) => {
-  const { username } = req.params;  // Traemos el username desde los params de la URL
+  const { username } = req.params;
 
   try {
     const user = await User.findOne({ username: username });
@@ -15,18 +14,40 @@ export const getUserAdverts = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
-    
+
+    const totalAdverts = await Advert.countDocuments({ user: user._id });
+
     const adverts = await Advert.find({ user: user._id });
 
     if (!adverts.length) {
       return res.status(404).json({ message: 'No se encontraron anuncios para este usuario' });
     }
 
-    res.status(200).json(adverts);
+    if (req.user) {
+      const favorites = req.user.favorites.map(id => id.toString());
+      
+      const advertsWithFavStatus = adverts.map(advert => ({
+        ...advert.toObject(),
+        isFavorite: favorites.includes(advert._id.toString())
+      }));
+
+      return res.status(200).json({
+        total: totalAdverts,
+        adverts: advertsWithFavStatus,
+      });
+    }
+
+    res.status(200).json({
+      total: totalAdverts,
+      adverts,
+    });
+
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener los anuncios del usuario', error: err.message });
   }
 };
+
+
 
 
 // Obtener datos del propio usuario (de si mismo)
@@ -100,16 +121,21 @@ export const getOwnAdverts = async (req, res) => {
     const userId = req.user;
 
     const adverts = await Advert.find({ user: userId });
+    const totalAdverts = await Advert.countDocuments({ user: userId });
 
     if (!adverts.length) {
       return res.status(404).json({ message: 'No tienes anuncios publicados.' });
     }
 
-    res.status(200).json(adverts);
+    res.status(200).json({
+      totalAdverts,
+      adverts,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener los anuncios', error: err.message });
   }
 };
+
 
 
 // Obtener "Mis anuncios favoritos" (favoritos del usuario autenticado)
@@ -118,16 +144,21 @@ export const getUserFavorites = async (req, res) => {
     const userId = req.user;
 
     const user = await User.findById(userId).populate('favorites');
+    const totalFavorites = user.favorites.length;
 
     if (!user || user.favorites.length === 0) {
       return res.status(404).json({ message: 'No tienes anuncios favoritos.' });
     }
 
-    res.status(200).json(user.favorites);
+    res.status(200).json({
+      totalFavorites,
+      favorites: user.favorites,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener favoritos', error: err.message });
   }
 };
+
 
 
 // Agregar un anuncio a favoritos

@@ -17,17 +17,42 @@ export const getAllAdverts = async (req, res) => {
 
       const totalAdverts = await Advert.countDocuments(); // Consulta del total de anuncios disponibles
 
-    if (!adverts.length) {
+    // Si el usuario está autenticado, indica si el anuncio es favorito
+      if (req.user) {  // Si el usuario está autenticado
+        const user = await User.findById(req.user._id);
+        const favorites = user.favorites.map(id => id.toString());
+  
+        const advertsWithFavStatus = adverts.map(advert => ({
+          ...advert.toObject(),
+          isFavorite: favorites.includes(advert._id.toString()) 
+        }));
+
+    // Verificar si no hay anuncios
+    if (!advertsWithFavStatus.length) {
       return res.status(404).json({ message: 'No se encontraron anuncios' });
     }
 
-    res.status(200).json({
+    // Enviar los anuncios con la propiedad `isFavorite`
+    return res.status(200).json({
       total: totalAdverts, // Total de anuncios disponibles
-      adverts,             // Anuncios solicitados con paginación
+      adverts: advertsWithFavStatus, // Anuncios con el estado de favoritos
     });
-  } catch (err) {
-    res.status(500).json({ message: 'Error al obtener anuncios', error: err.message, stack: err.stack });
   }
+
+  if (!req.user) {
+    const advertsWithoutFavStatus = adverts.map(advert => ({
+      ...advert.toObject(),
+    }));
+
+    return res.status(200).json({
+      total: totalAdverts, // Total de anuncios disponibles
+      adverts: advertsWithoutFavStatus, // Anuncios sin el estado de favoritos
+    });
+  }
+
+} catch (err) {
+  res.status(500).json({ message: 'Error al obtener anuncios', error: err.message, stack: err.stack });
+}
 };
 
 
@@ -36,9 +61,18 @@ export const getAdvertBySlug = async (req, res) => {
   const { slug } = req.params;
   try {
     const advert = await Advert.findOne({ slug });
+
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
+
+
+    if (req.user) {
+      const user = await User.findById(req.user._id);
+      const isFavorite = user.favorites.includes(advert._id);
+      advert.isFavorite = isFavorite;
+    }
+
     res.status(200).json(advert);
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener el anuncio', error: err.message });
@@ -49,7 +83,6 @@ export const getAdvertBySlug = async (req, res) => {
 // Filtro de anuncios
 export const searchAdverts = async (req, res) => {
   try {
-
     const {
       title,
       priceMin,
@@ -73,63 +106,23 @@ export const searchAdverts = async (req, res) => {
 
     const query = {};
 
-    // Filtros
-    // Filtro por título
-    if (title) {
-      query.title = { $regex: title, $options: 'i' };
-    }
-
-    // Filtro por precio
-    if (priceMin || priceMax) {
-      query.price = {};
-      if (priceMin) query.price.$gte = Number(priceMin);
-      if (priceMax) query.price.$lte = Number(priceMax);
-    }
-
-    // Filtro por tags
-    if (tags) {
-      query.tags = { $in: tags.split(',') };
-    }
-    // Filtro por estado del anuncio (disponible/reservado/vendido)
-    if (status) {
-      query.status = status;
-    }
-    // Filtro por tipo de transacción (venta/compra)
-    if (transaction) {
-      query.transaction = transaction;
-    }
-    // Filtro por colección
-    if (collection) {
-      query.collection = collection;
-    }
-    // Filtro por marca
-    if (brand) {
-      query.brand = brand;
-    }
-    // Filtro por tipo de producto (Figuras/Cartas/...)
-    if (product_type) {
-      query.product_type = product_type;
-    }
-    // Filtro por universo (Dragon Ball/Marvel/...)
-    if (universe) {
-      query.universe = universe;
-    }
-    // Filtro por condición (nuevo/usado/roto)
-    if (condition) {
-      query.condition = condition;
-    }
-    // Filtro por fecha de creación (rango de fechas)
+    if (title) query.title = { $regex: title, $options: 'i' };
+    if (priceMin || priceMax) query.price = { $gte: Number(priceMin), $lte: Number(priceMax) };
+    if (tags) query.tags = { $in: tags.split(',') };
+    if (status) query.status = status;
+    if (transaction) query.transaction = transaction;
+    if (collection) query.collection = collection;
+    if (brand) query.brand = brand;
+    if (product_type) query.product_type = product_type;
+    if (universe) query.universe = universe;
+    if (condition) query.condition = condition;
     if (createdAtMin || createdAtMax) {
       query.createdAt = {};
       if (createdAtMin) query.createdAt.$gte = new Date(createdAtMin);
       if (createdAtMax) query.createdAt.$lte = new Date(createdAtMax);
     }
-    // Filtro por slug
-    if (slug) {
-      query.slug = { $regex: slug, $options: 'i' };
-    }
+    if (slug) query.slug = { $regex: slug, $options: 'i' };
 
-    console.log(query);
     const adverts = await Advert.find(query)
       .skip((page - 1) * limit)
       .limit(Number(limit))
@@ -139,11 +132,24 @@ export const searchAdverts = async (req, res) => {
       return res.status(404).json({ message: 'No se encontraron anuncios' });
     }
 
-    res.status(200).json(adverts);
+    if (req.user) {
+      const user = await User.findById(req.user._id);
+      const favorites = user.favorites.map(id => id.toString());
+
+      const advertsWithFavStatus = adverts.map(advert => ({
+        ...advert.toObject(),
+        isFavorite: favorites.includes(advert._id.toString()),
+      }));
+
+      return res.status(200).json({ adverts: advertsWithFavStatus });
+    }
+
+    res.status(200).json({ adverts });
   } catch (err) {
     res.status(500).json({ message: 'Error al buscar anuncios', error: err.message });
   }
 };
+
 
 
 // MARCADO PARA BORRAR
@@ -263,7 +269,6 @@ export const getImages = async (req, res) => {
 };
 
 
-
 // Crear nuevo anuncio (Endpoint de Gestión de usuario)
 export const createAdvert = async (req, res) => {
   const {
@@ -280,6 +285,8 @@ export const createAdvert = async (req, res) => {
     tags,
   } = req.body;
   const userId = req.user;
+
+  let uploadedImages = []; // Definida de forma explicita
 
   try {
     // Validación de los campos obligatorios                         Ojo!! Revisar
@@ -299,7 +306,7 @@ export const createAdvert = async (req, res) => {
 
     // Guardar las rutas de las imágenes si se subieron (para luego poder borrarlas si se necesita)
     if (req.files && req.files.length > 0) {
-      uploadedImages = req.files.map(file => file.path);
+      uploadedImages = req.files.map(file => file.path); // uploafedImages se definía aquí previamente
     }
 
     // Crear el nuevo anuncio
@@ -327,7 +334,6 @@ export const createAdvert = async (req, res) => {
       anuncio: newAdvert,
     });
   } catch (err) {
-
     // Si ocurre un error al crear el anuncio, eliminamos las imágenes subidas
     if (uploadedImages.length > 0) {
       uploadedImages.forEach(filePath => {
@@ -362,29 +368,26 @@ export const editAdvert = async (req, res) => {
     images,
   } = req.body;
 
-  let newImages = [];  // Para guardar las imágenes nuevas que se subieron durante la edición
+  let newImages = [];  // Definida de forma explicita
 
   try {
-    // Buscar la ID
     const advert = await Advert.findById(id);
     
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
 
-    // Check de si está vendido
     if (advert.status === 'vendido') {
       return res.status(400).json({ message: 'No se puede editar un anuncio ya vendido.' });
     }
 
-    // check de que sea propietario 
     if (advert.user.toString() !== req.user) {
       return res.status(403).json({ message: 'No tienes permiso para editar este anuncio.' });
     }
 
     // Guardar las nuevas imágenes que se están subiendo
     if (req.files && req.files.length > 0) {
-      newImages = req.files.map(file => file.path);
+      newImages = req.files.map(file => file.path); // newImages se definía aquí previamente
     }
 
     // Eliminar las imágenes antiguas que ya no están en el nuevo anuncio

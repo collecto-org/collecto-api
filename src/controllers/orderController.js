@@ -1,6 +1,5 @@
 import Order from '../models/order.js';
 import Advert from '../models/advert.js';
-import User from '../models/user.js';
 
 // Crear una nueva orden
 export const createOrder = async (req, res) => {

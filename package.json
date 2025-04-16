@@ -43,6 +43,7 @@
     "tr46": "^5.1.0",
     "webidl-conversions": "^7.0.0",
     "whatwg-url": "^14.2.0",
+    "yamljs": "^0.3.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

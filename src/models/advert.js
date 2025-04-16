@@ -25,6 +25,7 @@ const advertSchema = new mongoose.Schema({
 
 // Generación del slug
 advertSchema.pre('save', function(next) {
+  const timestamp = Date.now();
   this.slug = slugify(this.title, { lower: true, strict: true })  + `-${timestamp}`; // Añadir timestamp al slug para hacerlo único
   next();
 });
