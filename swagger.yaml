@@ -15,7 +15,7 @@ paths:
       tags:
         - Autenticación y gestión de sesión
       summary: Registra un nuevo usuario en la plataforma
-      description: Crea un nuevo usuario con los datos proporcionados y envía un correo de verificación
+      description: Crea un nuevo usuario con los datos proporcionados, maneja la carga de una imagen de avatar, y envía un correo de verificación
       operationId: register
       requestBody:
         required: true
@@ -27,34 +27,44 @@ paths:
                 username:
                   type: string
                   description: Nombre de usuario
+                  example: "john_doe"
                 email:
                   type: string
                   format: email
                   description: Correo electrónico del usuario
+                  example: "john.doe@example.com"
                 password:
                   type: string
                   description: Contraseña del usuario
+                  example: "securePassword123"
                 firstName:
                   type: string
                   description: Primer nombre
+                  example: "John"
                 lastName:
                   type: string
                   description: Apellido
+                  example: "Doe"
                 phone:
                   type: string
                   description: Teléfono de contacto
+                  example: "+1234567890"
                 location:
                   type: string
                   description: Ubicación del usuario
+                  example: "Madrid, España"
                 avatarUrl:
                   type: string
-                  description: URL de la foto de perfil
+                  description: URL de la foto de perfil (será proporcionado automáticamente si el usuario sube una imagen)
+                  example: "/uploads/avatars/john_doe_avatar.jpg"
                 bio:
                   type: string
                   description: Biografía del usuario
+                  example: "Desarrollador web con pasión por la tecnología."
                 direccionId:
                   type: string
                   description: ID de la dirección asociada al usuario
+                  example: "abc123"
       responses:
         '201':
           description: Usuario registrado correctamente
@@ -72,12 +82,26 @@ paths:
                       id:
                         type: string
                         description: ID del usuario
+                        example: "507f1f77bcf86cd799439011"
                       username:
                         type: string
                         description: Nombre de usuario
+                        example: "john_doe"
                       email:
                         type: string
                         description: Correo electrónico
+                        example: "john.doe@example.com"
+                      avatarUrl:
+                        type: string
+                        description: URL de la imagen de avatar
+                        example: "/uploads/avatars/john_doe_avatar.jpg"
+        '400':
+          description: El usuario ya existe
+        '500':
+          description: Error interno en el servidor
+
+
+
 
   /api/auth/verify-email/{token}:
     get:
@@ -718,35 +742,47 @@ paths:
         '404':
           description: Usuario no encontrado
 
-  /api/users/mee:
+  /api/usrs/me:
     put:
       tags:
         - Usuarios
       summary: Editar perfil del usuario
-      description: Permite editar los datos del usuario autenticado
+      description: Permite editar los datos del usuario autenticado, incluyendo la opción de cambiar la imagen de avatar.
       operationId: editUserProfile
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
                 firstName:
                   type: string
+                  description: Primer nombre
+                  example: "John"
                 lastName:
                   type: string
+                  description: Apellido
+                  example: "Doe"
                 phone:
                   type: string
+                  description: Teléfono de contacto
+                  example: "+1234567890"
                 location:
                   type: string
+                  description: Ubicación del usuario
+                  example: "Madrid, España"
                 avatarUrl:
                   type: string
+                  description: URL de la nueva foto de perfil (será proporcionada automáticamente si se sube una nueva imagen)
+                  example: "/uploads/avatars/john_doe_avatar_updated.jpg"
                 bio:
                   type: string
+                  description: Biografía del usuario
+                  example: "Desarrollador web con pasión por la tecnología."
       responses:
         '200':
-          description: Perfil actualizado
+          description: Perfil actualizado correctamente
           content:
             application/json:
               schema:
@@ -754,22 +790,24 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Perfil actualizado"
+                    example: "Perfil actualizado correctamente"
                   user:
                     $ref: '#/components/schemas/User'
         '404':
           description: Usuario no encontrado
+        '500':
+          description: Error interno en el servidor
 
   /api/userse/me:
     delete:
       tags:
         - Usuarios
       summary: Eliminar perfil del usuario
-      description: Elimina el perfil del usuario autenticado
+      description: Elimina el perfil del usuario autenticado, incluyendo la eliminación de la imagen de avatar asociada si existe.
       operationId: deleteUserProfile
       responses:
         '200':
-          description: Cuenta eliminada
+          description: Cuenta eliminada correctamente
           content:
             application/json:
               schema:
@@ -780,6 +818,8 @@ paths:
                     example: "Cuenta eliminada"
         '404':
           description: Usuario no encontrado
+        '500':
+          description: Error interno en el servidor
 
   /api/users/me/adverts:
     get:
@@ -1032,10 +1072,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  totalFavorites:
+                  total:
                     type: integer
                     description: Total de anuncios favoritos del usuario
-                  favorites:
+                  adverts:
                     type: array
                     items:
                       type: object

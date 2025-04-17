@@ -197,7 +197,6 @@ export const getOwnAdverts = async (req, res) => {
 };
 
 
-
 // Obtener "Mis anuncios favoritos" (favoritos del usuario autenticado)
 export const getUserFavorites = async (req, res) => {
   try {
@@ -206,19 +205,18 @@ export const getUserFavorites = async (req, res) => {
     const user = await User.findById(userId).populate('favorites');
     const totalFavorites = user.favorites.length;
 
-    if (!user || user.favorites.length === 0) {
+    if (!user || totalFavorites === 0) {
       return res.status(404).json({ message: 'No tienes anuncios favoritos.' });
     }
 
     res.status(200).json({
-      totalFavorites,
-      favorites: user.favorites,
+      total: totalFavorites,  // Total de anuncios favoritos
+      adverts: user.favorites,  // Los anuncios favoritos
     });
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener favoritos', error: err.message });
   }
 };
-
 
 
 // Agregar un anuncio a favoritos
