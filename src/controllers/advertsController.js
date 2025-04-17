@@ -2,6 +2,11 @@ import Advert from '../models/advert.js';
 import Notification from '../models/notification.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 // Sacar todos los anuncios (con pag y filtros)
@@ -475,7 +480,7 @@ export const deleteAdvert = async (req, res) => {
 
     // Si el anuncio tiene imágenes, las elimina del servidor
     advert.images.forEach(imagePath => {
-      fs.unlink(path.join(__dirname, '..', imagePath), (err) => {
+      fs.unlink(path.join(__dirname, '..', 'public', 'images', imagePath), (err) => {
         if (err) {
           console.error(`Error al eliminar archivo: ${imagePath}`, err);
         }

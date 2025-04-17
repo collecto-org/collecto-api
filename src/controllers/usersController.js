@@ -4,6 +4,10 @@ import Notification from '../models/notification.js';
 import Chat from '../models/chat.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
@@ -112,10 +116,10 @@ export const editUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    if (avatarUrl && user.avatarUrl) {
-      fs.unlink(path.join(__dirname, '..', user.avatarUrl), (err) => {
+    if (user.avatarUrl) {
+      fs.unlink(path.join(__dirname, '..', 'public', 'pictures', user.avatarUrl), (err) => {
         if (err) {
-          console.error(`Error al eliminar el avatar anterior: ${user.avatarUrl}`, err);
+          console.error(`Error al eliminar el avatar del usuario: ${user.avatarUrl}`, err);
         }
       });
     }
@@ -158,7 +162,7 @@ export const deleteUserProfile = async (req, res) => {
     }
 
     if (user.avatarUrl) {
-      fs.unlink(path.join(__dirname, '..', user.avatarUrl), (err) => {
+      fs.unlink(path.join(__dirname, '..', 'public', 'pictures', user.avatarUrl), (err) => {
         if (err) {
           console.error(`Error al eliminar el avatar del usuario: ${user.avatarUrl}`, err);
         }
