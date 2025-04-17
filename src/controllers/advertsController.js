@@ -66,14 +66,18 @@ export const getAdvertBySlug = async (req, res) => {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
 
+    const advertWithImages = {
+      ...advert.toObject(),
+      images: advert.images.map(imagePath => path.basename(imagePath))
+    };
 
     if (req.user) {
       const user = await User.findById(req.user._id);
       const isFavorite = user.favorites.includes(advert._id);
-      advert.isFavorite = isFavorite;
+      advertWithImages.isFavorite = isFavorite;
     }
 
-    res.status(200).json(advert);
+    res.status(200).json(advertWithImages);
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener el anuncio', error: err.message });
   }
@@ -304,9 +308,9 @@ export const createAdvert = async (req, res) => {
       return res.status(400).json({ message: 'Debe haber al menos un tag' });
     }
 
-    // Guardar las rutas de las imágenes si se subieron (para luego poder borrarlas si se necesita)
+    // Guardar las rutas de las imágenes si se subieron (solo los nombres de los archivos)
     if (req.files && req.files.length > 0) {
-      uploadedImages = req.files.map(file => file.path); // uploafedImages se definía aquí previamente
+      uploadedImages = req.files.map(file => file.filename); // Guardamos solo el nombre del archivo
     }
 
     // Crear el nuevo anuncio
@@ -322,9 +326,9 @@ export const createAdvert = async (req, res) => {
       collection,
       brand,
       tags,
-      user: userId,  // Asociando el anuncio al usuario
-      mainImage: req.files && req.files.length > 0 ? req.files[0].path : '',
-      images: req.files ? req.files.map(file => file.path) : [],
+      user: userId,
+      mainImage: req.files && req.files.length > 0 ? req.files[0].filename : '',
+      images: uploadedImages,
     });
 
     await newAdvert.save();
@@ -336,11 +340,11 @@ export const createAdvert = async (req, res) => {
   } catch (err) {
     // Si ocurre un error al crear el anuncio, eliminamos las imágenes subidas
     if (uploadedImages.length > 0) {
-      uploadedImages.forEach(filePath => {
+      uploadedImages.forEach(fileName => {
         // Eliminamos las imágenes del servidor
-        fs.unlink(path.join(__dirname, '..', filePath), (err) => {
+        fs.unlink(path.join(__dirname, '..', 'public', 'images', fileName), (err) => {
           if (err) {
-            console.error(`Error al eliminar archivo: ${filePath}`, err);
+            console.error(`Error al eliminar archivo: ${fileName}`, err);
           }
         });
       });
@@ -368,7 +372,7 @@ export const editAdvert = async (req, res) => {
     images,
   } = req.body;
 
-  let newImages = [];  // Definida de forma explicita
+  let newImages = [];
 
   try {
     const advert = await Advert.findById(id);
@@ -387,15 +391,14 @@ export const editAdvert = async (req, res) => {
 
     // Guardar las nuevas imágenes que se están subiendo
     if (req.files && req.files.length > 0) {
-      newImages = req.files.map(file => file.path); // newImages se definía aquí previamente
+      newImages = req.files.map(file => file.filename);
     }
 
     // Eliminar las imágenes antiguas que ya no están en el nuevo anuncio
-    const imagesToDelete = advert.images.filter(image => !images.includes(image)); // Encuentra las imágenes que ya no están
+    const imagesToDelete = advert.images.filter(image => !images.includes(image));
     if (imagesToDelete.length > 0) {
-      // Elimina las imágenes del servidor
       imagesToDelete.forEach(imagePath => {
-        fs.unlink(path.join(__dirname, '..', imagePath), (err) => {
+        fs.unlink(path.join(__dirname, '..', 'public', 'images', imagePath), (err) => {
           if (err) {
             console.error(`Error al eliminar archivo: ${imagePath}`, err);
           }
@@ -421,10 +424,10 @@ export const editAdvert = async (req, res) => {
 
     await advert.save();
 
-    // Elimina las imágenes que ya no están en el anuncio si la edicion tuvo éxito
+    // Elimina las imágenes que ya no están en el anuncio si la edición tuvo éxito
     if (imagesToDelete.length > 0) {
       imagesToDelete.forEach(imagePath => {
-        fs.unlink(path.join(__dirname, '..', imagePath), (err) => {
+        fs.unlink(path.join(__dirname, '..', 'public', 'images', imagePath), (err) => {
           if (err) {
             console.error(`Error al eliminar archivo: ${imagePath}`, err);
           }
@@ -446,7 +449,7 @@ export const editAdvert = async (req, res) => {
     // Si ocurre un error al editar el anuncio, eliminamos las imágenes subidas
     if (newImages.length > 0) {
       newImages.forEach(imagePath => {
-        fs.unlink(path.join(__dirname, '..', imagePath), (err) => {
+        fs.unlink(path.join(__dirname, '..', 'public', 'images', imagePath), (err) => {
           if (err) {
             console.error(`Error al eliminar archivo nuevo: ${imagePath}`, err);
           }

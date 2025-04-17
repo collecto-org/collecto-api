@@ -393,7 +393,43 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Advert'
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: ID del anuncio
+                  title:
+                    type: string
+                    description: Título del anuncio
+                  description:
+                    type: string
+                    description: Descripción del anuncio
+                  price:
+                    type: number
+                    format: double
+                    description: Precio del artículo
+                  transaction:
+                    type: string
+                    description: Tipo de transacción (compra o venta)
+                  status:
+                    type: string
+                    description: Estado del anuncio (disponible, reservado, vendido)
+                  images:
+                    type: array
+                    items:
+                      type: string
+                      description: "Nombres de los archivos de las imágenes del anuncio (solo nombres de archivo, no URLs)"
+                  createdAt:
+                    type: string
+                    format: date-time
+                    description: Fecha de creación del anuncio
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    description: Fecha de la última actualización del anuncio
+                  isFavorite:
+                    type: boolean
+                    description: "Indica si el anuncio es favorito del usuario autenticado (si aplica)"
         '404':
           description: Anuncio no encontrado
 
@@ -924,7 +960,32 @@ paths:
                     type: string
                     example: "Anuncio creado"
                   advert:
-                    $ref: '#/components/schemas/Advert'
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: ID del anuncio
+                      title:
+                        type: string
+                        description: Título del anuncio
+                      description:
+                        type: string
+                        description: Descripción del anuncio
+                      price:
+                        type: number
+                        format: double
+                        description: Precio del artículo
+                      transaction:
+                        type: string
+                        description: Tipo de transacción (compra o venta)
+                      status:
+                        type: string
+                        description: Estado del anuncio (disponible, reservado, vendido)
+                      images:
+                        type: array
+                        items:
+                          type: string
+                          description: "Nombres de los archivos de las imágenes del anuncio (solo nombres de archivo)"
         '400':
           description: Faltan campos obligatorios
 
@@ -1009,6 +1070,11 @@ paths:
                   type: array
                   items:
                     type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    description: "Nombres de los archivos de las imágenes del anuncio"
       responses:
         '200':
           description: Anuncio actualizado
