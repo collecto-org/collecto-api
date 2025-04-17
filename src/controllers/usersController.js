@@ -2,6 +2,8 @@ import Advert from '../models/advert.js';
 import User from '../models/user.js';
 import Notification from '../models/notification.js';
 import Chat from '../models/chat.js';
+import fs from 'fs';
+import path from 'path';
 
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
@@ -76,43 +78,101 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
-// Editar el perfil del usuario
+
+// Editar perfil del usuario
 export const editUserProfile = async (req, res) => {
   const userId = req.user;
+  const updatedData = req.body;
+
+  let avatarUrl;
+  let uploadedAvatar = [];
+
+  if (req.files && req.files.length > 0) {
+    avatarUrl = req.files[0].path;
+    uploadedAvatar = [avatarUrl];
+  }
+
+  const allowedFields = ['email', 'firstName', 'lastName', 'phone', 'location', 'bio', 'direccionId']; 
+  const dataToUpdate = {};
+
+  Object.keys(updatedData).forEach(field => {
+    if (allowedFields.includes(field)) {
+      dataToUpdate[field] = updatedData[field];
+    }
+  });
+
+  if (avatarUrl) {
+    dataToUpdate.avatarUrl = avatarUrl;
+  }
 
   try {
-    const updatedData = req.body;
-
-
-    const user = await User.findByIdAndUpdate(userId, updatedData, { new: true });
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    res.status(200).json({ message: 'Perfil actualizado', user });
+    if (avatarUrl && user.avatarUrl) {
+      fs.unlink(path.join(__dirname, '..', user.avatarUrl), (err) => {
+        if (err) {
+          console.error(`Error al eliminar el avatar anterior: ${user.avatarUrl}`, err);
+        }
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, dataToUpdate, { new: true });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'Error al actualizar el perfil' });
+    }
+
+    res.status(200).json({
+      message: 'Perfil actualizado correctamente',
+      user: updatedUser,
+    });
   } catch (err) {
+    if (uploadedAvatar.length > 0) {
+      uploadedAvatar.forEach(filePath => {
+        fs.unlink(path.join(__dirname, '..', filePath), (err) => {
+          if (err) {
+            console.error(`Error al eliminar archivo: ${filePath}`, err);
+          }
+        });
+      });
+    }
+
     res.status(500).json({ message: 'Error al actualizar el perfil', error: err.message });
   }
 };
+
 
 // Eliminar el perfil del usuario
 export const deleteUserProfile = async (req, res) => {
   const userId = req.user;
 
   try {
-
-    const user = await User.findByIdAndDelete(userId);
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
+
+    if (user.avatarUrl) {
+      fs.unlink(path.join(__dirname, '..', user.avatarUrl), (err) => {
+        if (err) {
+          console.error(`Error al eliminar el avatar del usuario: ${user.avatarUrl}`, err);
+        }
+      });
+    }
+
+    await User.findByIdAndDelete(userId);
 
     res.status(200).json({ message: 'Cuenta eliminada' });
   } catch (err) {
     res.status(500).json({ message: 'Error al eliminar el perfil', error: err.message });
   }
 };
+
 
 
 // Ver anuncios de uno mismo

@@ -8,7 +8,11 @@ const __dirname = path.dirname(__filename);
 // Configuración del almacenamiento de imágenes
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../public/images');
+    // Destino de las imagenes
+    const uploadPath = req.body.type === 'profile' 
+      ? path.join(__dirname, '../public/pictures') // Para el avatar, se guarda en la carpeta 'pictures'
+      : path.join(__dirname, '../public/images'); // Para los anuncios, se guarda en la carpeta 'images'
+    
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {

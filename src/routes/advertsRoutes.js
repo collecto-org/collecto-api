@@ -29,7 +29,7 @@ router.get('/:id/picture', getImages); // Ver imágenes de un anuncio
 
 // Gestión de usuarios
 router.post('/', verifyToken, upload, createAdvert); // Crear nuevo anuncio
-router.put('/:id', verifyToken, verifyAdvertOwner, editAdvert);  // Editar anuncio
+router.put('/:id', verifyToken, verifyAdvertOwner, upload, editAdvert);  // Editar anuncio
 router.delete('/:id', verifyToken, verifyAdvertOwner, deleteAdvert); // Eliminar anuncio
 
 export default router;

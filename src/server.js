@@ -7,6 +7,7 @@ import usersRoutes from './routes/usersRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import shipmentRoutes from './routes/shipmentRoutes.js';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -27,6 +28,7 @@ connectDB();
 
 // Middleware para parsear JSON
 app.use(express.json());
+app.use(cookieParser())
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({ origin: 'http://localhost:5173', credentials: true})); // Habilitar CORS para el frontend en localhost:5173  (Ojo!! Cambiar a la URL de producción en el futuro)
 

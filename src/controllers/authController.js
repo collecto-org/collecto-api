@@ -2,22 +2,32 @@ import bcrypt from 'bcrypt';
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 
 
 // Sign up
 export const register = async (req, res) => {
-  const {
-    username,
-    email,
-    password,
-    firstName,
-    lastName,
-    phone,
-    location,
-    avatarUrl,
-    bio,
-    direccionId
+  const { 
+    username, 
+    email, 
+    password, 
+    firstName, 
+    lastName, 
+    phone, 
+    location, 
+    bio, 
+    direccionId 
   } = req.body;
+
+  let avatarUrl;
+  let uploadedAvatar = [];
+
+
+  if (req.files && req.files.length > 0) {
+    avatarUrl = req.files[0].path;
+    uploadedAvatar = [avatarUrl];
+  }
 
   try {
     // Verificar si el usuario ya existe
@@ -63,9 +73,7 @@ export const register = async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: newUser.email,
-      //Cambiar según queramos que sea el mensaje del asunto:
       subject: 'Verificación de cuenta',
-      //Cambiar según queramos que sea el mensaje del mail y cambiar el enlace por el de la app
       html: `
         <p>Gracias por registrarte. Por favor, haz clic en el siguiente enlace para verificar tu correo electrónico:</p> 
         <a href="http://localhost:3000/verify-email/${emailVerificationToken}">Verificar mi correo electrónico</a>
@@ -76,25 +84,33 @@ export const register = async (req, res) => {
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
         console.log('Error al enviar el correo:', err);
+        if (uploadedAvatar.length > 0) {
+          uploadedAvatar.forEach(filePath => {
+            fs.unlink(path.join(__dirname, '..', filePath), (err) => {
+              if (err) console.error(`Error al eliminar archivo: ${filePath}`, err);
+            });
+          });
+        }
         return res.status(500).json({ message: 'Error al enviar correo de verificación' });
       }
+
       console.log('Correo de verificación enviado:', info.response);
 
-      // Genera el token JWT para autenticación
+      // Generar el token JWT para autenticación
       const token = jwt.sign(
         { id: newUser._id, username: newUser.username },
         process.env.JWT_SECRET,
         { expiresIn: '1h' }
       );
-      // ENVIA EL TOKEN JWT COMO COOKIE HTTP-ONLY
+      // ENVÍA EL TOKEN JWT COMO COOKIE HTTP-ONLY
       res.cookie('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 3600000, // la cookie expira en 1 hora (en el caso del signup, por si no se verifica el email)
+        maxAge: 3600000, // la cookie expira en 1 hora
         sameSite: 'Strict',
       });
-      
-      // Responder solo después de enviar el correo correctamente
+
+      // Responder después de enviar el correo
       res.status(201).json({
         message: 'Usuario registrado. Verifica tu correo para activarlo.',
         user: {
@@ -105,10 +121,18 @@ export const register = async (req, res) => {
       });
     });
   } catch (err) {
+    if (uploadedAvatar.length > 0) {
+      uploadedAvatar.forEach(filePath => {
+        fs.unlink(path.join(__dirname, '..', filePath), (err) => {
+          if (err) {
+            console.error(`Error al eliminar archivo: ${filePath}`, err);
+          }
+        });
+      });
+    }
     res.status(500).json({ message: 'Error al registrar usuario', error: err.message });
   }
 };
-
 
 
 // Verificacion del correo electronico
