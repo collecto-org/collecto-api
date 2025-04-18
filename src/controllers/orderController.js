@@ -134,21 +134,33 @@ export const cancelOrder = async (req, res) => {
 // Obtener todas las órdenes de un usuario autenticado
 export const getAllUserOrders = async (req, res) => {
   const userId = req.user;
+  const { orderId, page = 1, limit = 10 } = req.query;
 
   try {
-    const orders = await Order.find({
-      $or: [{ buyerId: userId }, { sellerId: userId }],
-    })
+    let filter = { $or: [{ buyerId: userId }, { sellerId: userId }] };
+
+    if (orderId) {
+      filter._id = orderId;
+    }
+
+    const orders = await Order.find(filter)
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
       .populate('advertId', 'title price')
       .populate('buyerId', 'username')
       .populate('sellerId', 'username')
       .sort({ createdAt: -1 });
 
+    const totalOrders = await Order.countDocuments(filter);
+
     if (!orders.length) {
       return res.status(404).json({ message: 'No tienes órdenes.' });
     }
 
-    res.status(200).json(orders);
+    res.status(200).json({
+      total: totalOrders,
+      orders,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener las órdenes', error: err.message });
   }

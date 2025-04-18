@@ -101,8 +101,6 @@ paths:
           description: Error interno en el servidor
 
 
-
-
   /api/auth/verify-email/{token}:
     get:
       tags:
@@ -309,6 +307,7 @@ paths:
                     type: string
                     example: "Contraseña actualizada y correo de confirmación enviado"
 
+
   /api/adverts:
     get:
       tags:
@@ -371,6 +370,229 @@ paths:
           description: No se encontraron anuncios
         '500':
           description: Error interno en el servidor
+
+    post:
+      tags:
+        - Gestiones del usuario
+      summary: Crear un nuevo anuncio
+      description: Crea un anuncio para el usuario autenticado
+      operationId: createAdvert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                  format: double
+                transaction:
+                  type: string
+                  enum:
+                    - venta
+                    - compra
+                status:
+                  type: string
+                  enum:
+                    - disponible
+                    - reservado
+                    - vendido
+                product_type:
+                  type: string
+                universe:
+                  type: string
+                condition:
+                  type: string
+                  enum:
+                    - nuevo
+                    - usado
+                    - roto
+                collection:
+                  type: string
+                brand:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Anuncio creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Anuncio creado"
+                  advert:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: ID del anuncio
+                      title:
+                        type: string
+                        description: Título del anuncio
+                      description:
+                        type: string
+                        description: Descripción del anuncio
+                      price:
+                        type: number
+                        format: double
+                        description: Precio del artículo
+                      transaction:
+                        type: string
+                        description: Tipo de transacción (compra o venta)
+                      status:
+                        type: string
+                        description: Estado del anuncio (disponible, reservado, vendido)
+                      images:
+                        type: array
+                        items:
+                          type: string
+                          description: "Nombres de los archivos de las imágenes del anuncio (solo nombres de archivo)"
+        '400':
+          description: Faltan campos obligatorios
+
+
+  /api/adverts/{id}:
+    get:
+      tags:
+        - Gestiones del usuario
+      summary: Obtener un anuncio específico
+      description: Devuelve los detalles de un anuncio específico
+      operationId: getAdvertById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del anuncio
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles del anuncio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Advert'
+        '404':
+          description: Anuncio no encontrado
+
+    put:
+      tags:
+        - Gestiones del usuario
+      summary: Editar un anuncio
+      description: Permite editar un anuncio creado por el usuario autenticado
+      operationId: editAdvert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del anuncio
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                  format: double
+                transaction:
+                  type: string
+                  enum:
+                    - venta
+                    - compra
+                status:
+                  type: string
+                  enum:
+                    - disponible
+                    - reservado
+                    - vendido
+                product_type:
+                  type: string
+                universe:
+                  type: string
+                condition:
+                  type: string
+                  enum:
+                    - nuevo
+                    - usado
+                    - roto
+                collection:
+                  type: string
+                brand:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    description: "Nombres de los archivos de las imágenes del anuncio"
+      responses:
+        '200':
+          description: Anuncio actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Anuncio actualizado"
+                  advert:
+                    $ref: '#/components/schemas/Advert'
+        '404':
+          description: Anuncio no encontrado
+        '403':
+          description: No tienes permiso para editar este anuncio
+
+    delete:
+      tags:
+        - Gestiones del usuario
+      summary: Eliminar un anuncio
+      description: Elimina un anuncio creado por el usuario autenticado
+      operationId: deleteAdvert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del anuncio
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Anuncio eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Anuncio eliminado"
+        '404':
+          description: Anuncio no encontrado
+        '403':
+          description: No tienes permiso para eliminar este anuncio
 
 
   /api/adverts/{slug}:
@@ -714,7 +936,6 @@ paths:
         '404':
           description: Anuncio no encontrado
 
-  /api/adverts/{id}/picturee:
     get:
       tags:
         - Anuncios
@@ -744,10 +965,11 @@ paths:
         '404':
           description: Anuncio no encontrado
 
+
   /api/users/me:
     get:
       tags:
-        - Usuarios
+        - Gestiones del usuario
       summary: Obtener datos del propio usuario
       description: Devuelve los datos del usuario autenticado
       operationId: getCurrentUser
@@ -778,10 +1000,9 @@ paths:
         '404':
           description: Usuario no encontrado
 
-  /api/usrs/me:
     put:
       tags:
-        - Usuarios
+        - Gestiones del usuario
       summary: Editar perfil del usuario
       description: Permite editar los datos del usuario autenticado, incluyendo la opción de cambiar la imagen de avatar.
       operationId: editUserProfile
@@ -834,10 +1055,9 @@ paths:
         '500':
           description: Error interno en el servidor
 
-  /api/userse/me:
     delete:
       tags:
-        - Usuarios
+        - Gestiones del usuario
       summary: Eliminar perfil del usuario
       description: Elimina el perfil del usuario autenticado, incluyendo la eliminación de la imagen de avatar asociada si existe.
       operationId: deleteUserProfile
@@ -856,6 +1076,7 @@ paths:
           description: Usuario no encontrado
         '500':
           description: Error interno en el servidor
+
 
   /api/users/me/adverts:
     get:
@@ -898,230 +1119,6 @@ paths:
         '500':
           description: Error interno en el servidor
 
-  /api/advrets:
-    post:
-      tags:
-        - Usuarios
-      summary: Crear un nuevo anuncio
-      description: Crea un anuncio para el usuario autenticado
-      operationId: createAdvert
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                description:
-                  type: string
-                price:
-                  type: number
-                  format: double
-                transaction:
-                  type: string
-                  enum:
-                    - venta
-                    - compra
-                status:
-                  type: string
-                  enum:
-                    - disponible
-                    - reservado
-                    - vendido
-                product_type:
-                  type: string
-                universe:
-                  type: string
-                condition:
-                  type: string
-                  enum:
-                    - nuevo
-                    - usado
-                    - roto
-                collection:
-                  type: string
-                brand:
-                  type: string
-                tags:
-                  type: array
-                  items:
-                    type: string
-      responses:
-        '201':
-          description: Anuncio creado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Anuncio creado"
-                  advert:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        description: ID del anuncio
-                      title:
-                        type: string
-                        description: Título del anuncio
-                      description:
-                        type: string
-                        description: Descripción del anuncio
-                      price:
-                        type: number
-                        format: double
-                        description: Precio del artículo
-                      transaction:
-                        type: string
-                        description: Tipo de transacción (compra o venta)
-                      status:
-                        type: string
-                        description: Estado del anuncio (disponible, reservado, vendido)
-                      images:
-                        type: array
-                        items:
-                          type: string
-                          description: "Nombres de los archivos de las imágenes del anuncio (solo nombres de archivo)"
-        '400':
-          description: Faltan campos obligatorios
-
-  /api/adverts/{id}:
-    get:
-      tags:
-        - Usuarios
-      summary: Obtener un anuncio específico
-      description: Devuelve los detalles de un anuncio específico
-      operationId: getAdvertById
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del anuncio
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Detalles del anuncio
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Advert'
-        '404':
-          description: Anuncio no encontrado
-
-  /api/adveerts/{id}:
-    put:
-      tags:
-        - Usuarios
-      summary: Editar un anuncio
-      description: Permite editar un anuncio creado por el usuario autenticado
-      operationId: editAdvert
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del anuncio
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                description:
-                  type: string
-                price:
-                  type: number
-                  format: double
-                transaction:
-                  type: string
-                  enum:
-                    - venta
-                    - compra
-                status:
-                  type: string
-                  enum:
-                    - disponible
-                    - reservado
-                    - vendido
-                product_type:
-                  type: string
-                universe:
-                  type: string
-                condition:
-                  type: string
-                  enum:
-                    - nuevo
-                    - usado
-                    - roto
-                collection:
-                  type: string
-                brand:
-                  type: string
-                tags:
-                  type: array
-                  items:
-                    type: string
-                images:
-                  type: array
-                  items:
-                    type: string
-                    description: "Nombres de los archivos de las imágenes del anuncio"
-      responses:
-        '200':
-          description: Anuncio actualizado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Anuncio actualizado"
-                  advert:
-                    $ref: '#/components/schemas/Advert'
-        '404':
-          description: Anuncio no encontrado
-        '403':
-          description: No tienes permiso para editar este anuncio
-
-  /api/advertes/{id}:
-    delete:
-      tags:
-        - Usuarios
-      summary: Eliminar un anuncio
-      description: Elimina un anuncio creado por el usuario autenticado
-      operationId: deleteAdvert
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del anuncio
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Anuncio eliminado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Anuncio eliminado"
-        '404':
-          description: Anuncio no encontrado
-        '403':
-          description: No tienes permiso para eliminar este anuncio
 
   /api/users/me/favorites:
     get:
@@ -1194,7 +1191,6 @@ paths:
         '400':
           description: El anuncio ya está en tus favoritos
 
-  /api/users/me/favoirtes/{listingId}:
     delete:
       tags:
         - Favoritos
@@ -1223,6 +1219,9 @@ paths:
           description: Anuncio no encontrado
         '400':
           description: El anuncio no está en tus favoritos
+
+
+
 
   /api/users/me/notifications:
     get:
@@ -1429,6 +1428,41 @@ paths:
           description: No puedes chatear contigo mismo
 
   /api/users/me/chat/{chatId}:
+    get:
+      tags:
+        - Chat
+      summary: Ver los mensajes de un chat
+      description: Muestra todos los mensajes de un chat específico en el que el usuario autenticado está involucrado
+      operationId: getChatMessages
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: ID del chat del cual se obtendrán los mensajes
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de mensajes del chat
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sender:
+                      type: string
+                    content:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time
+        '404':
+          description: Chat no encontrado
+        '403':
+          description: No tienes permiso para ver este chat
+
     post:
       tags:
         - Chat
@@ -1501,41 +1535,6 @@ paths:
         '404':
           description: No tienes conversaciones
 
-  /api/users/me/cht/{chatId}:
-    get:
-      tags:
-        - Chat
-      summary: Ver los mensajes de un chat
-      description: Muestra todos los mensajes de un chat específico en el que el usuario autenticado está involucrado
-      operationId: getChatMessages
-      parameters:
-        - name: chatId
-          in: path
-          required: true
-          description: ID del chat del cual se obtendrán los mensajes
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Lista de mensajes del chat
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    sender:
-                      type: string
-                    content:
-                      type: string
-                    createdAt:
-                      type: string
-                      format: date-time
-        '404':
-          description: Chat no encontrado
-        '403':
-          description: No tienes permiso para ver este chat
 
   /api/orders:
     post:
@@ -1573,19 +1572,19 @@ paths:
           description: Anuncio no encontrado
 
   /api/orders/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID de la orden
+        schema:
+          type: string
     get:
       tags:
         - Ordenes
       summary: Obtener detalles de una orden
       description: Permite obtener los detalles de una orden mediante su ID
       operationId: getOrderDetails
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID de la orden
-          schema:
-            type: string
       responses:
         '200':
           description: Detalles de la orden
@@ -1598,6 +1597,32 @@ paths:
                     $ref: '#/components/schemas/Order'
         '404':
           description: Orden no encontrada
+
+    delete:
+      tags:
+        - Ordenes
+      summary: Cancelar una orden
+      description: Permite cancelar una orden existente
+      operationId: cancelOrder
+      responses:
+        '200':
+          description: Orden cancelada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Orden cancelada"
+                  order:
+                    $ref: '#/components/schemas/Order'
+        '400':
+          description: Solo se pueden cancelar las órdenes en estado "pending"
+        '404':
+          description: Orden no encontrada
+        '403':
+          description: No tienes permiso para cancelar esta orden
 
   /api/orders/{id}/status:
     patch:
@@ -1644,58 +1669,54 @@ paths:
         '403':
           description: No tienes permiso para actualizar el estado de esta orden
 
-  /api/ordres/{id}:
-    delete:
-      tags:
-        - Ordenes
-      summary: Cancelar una orden
-      description: Permite cancelar una orden existente
-      operationId: cancelOrder
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID de la orden
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Orden cancelada
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Orden cancelada"
-                  order:
-                    $ref: '#/components/schemas/Order'
-        '400':
-          description: Solo se pueden cancelar las órdenes en estado "pending"
-        '404':
-          description: Orden no encontrada
-        '403':
-          description: No tienes permiso para cancelar esta orden
-
   /api/orders/me:
     get:
       tags:
         - Ordenes
       summary: Obtener todas las órdenes del usuario autenticado
-      description: Devuelve todas las órdenes de compra y venta asociadas al usuario autenticado
+      description: Devuelve todas las órdenes de compra y venta asociadas al usuario autenticado. Se puede filtrar por `orderId`, y se aplica paginación con `page` y `limit`.
       operationId: getAllUserOrders
+      parameters:
+        - name: orderId
+          in: query
+          required: false
+          description: Filtra las órdenes por un ID específico
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          description: Número de página para paginación (por defecto 1)
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: Número de órdenes por página (por defecto 10)
+          schema:
+            type: integer
+            default: 10
       responses:
         '200':
-          description: Lista de órdenes del usuario
+          description: Lista de órdenes del usuario, incluyendo el total de órdenes
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Order'
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: Total de órdenes del usuario
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
         '404':
           description: No tienes órdenes
+        '500':
+          description: Error interno en el servidor
+
 
   /api/payments:
     post:
