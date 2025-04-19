@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken } from '../middlewares/authMiddleware.js';
+import { verifyToken, loadUserIfAuthenticated } from '../middlewares/authMiddleware.js';
 import {
   initiatePayment,
   getPaymentDetails,
@@ -11,12 +11,12 @@ import {
 
 const router = express.Router();
 
-router.post('/', verifyToken, initiatePayment); // Iniciar un pago
-router.get('/:id', verifyToken, getPaymentDetails); // Ver detalles de un pago
-router.get('/status/:paymentId', verifyToken, getPaymentStatus); // Consultar el estado del pago
-router.get('/me/purchases', verifyToken, getMyPurchases); // Ver las compras realizadas
-router.get('/me/sales', verifyToken, getMySales); // Ver las ventas realizadas
-router.post('/confirmation', confirmPayment); // Confirmar un pago (Webhook de MercadoPago)
+router.post('/', verifyToken, loadUserIfAuthenticated, initiatePayment); // Iniciar un pago
+router.get('/:id', verifyToken, loadUserIfAuthenticated, getPaymentDetails); // Ver detalles de un pago
+router.get('/status/:paymentId', verifyToken, loadUserIfAuthenticated, getPaymentStatus); // Consultar el estado del pago
+router.get('/me/purchases', verifyToken, loadUserIfAuthenticated, getMyPurchases); // Ver las compras realizadas
+router.get('/me/sales', verifyToken, loadUserIfAuthenticated, getMySales); // Ver las ventas realizadas
+router.post('/confirmation', confirmPayment); // Confirmar un pago
 
 
 export default router;

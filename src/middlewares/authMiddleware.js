@@ -1,6 +1,6 @@
-// Middleware para verificar el token de autenticación JWT
 import jwt from 'jsonwebtoken';
 
+// Middleware para verificar el token de autenticación JWT
 function verifyToken(req, res, next) {
   const token = req.cookies.token;
 
@@ -23,4 +23,21 @@ function verifyToken(req, res, next) {
   }
 }
 
-export { verifyToken };
+// Middleware para cargar la información del usuario si está autenticado
+function loadUserIfAuthenticated(req, res, next) {
+  const token = req.cookies.token;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded.id;  // Asigna el ID del user
+    } catch (error) {
+      // Si el token es inválido (o ha expirado), no se asigna el req.user
+      console.error('Token inválido o expirado:', error.message);
+    }
+  }
+
+  next();
+}
+
+export { verifyToken, loadUserIfAuthenticated };
