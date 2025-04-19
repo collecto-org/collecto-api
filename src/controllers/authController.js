@@ -223,7 +223,11 @@ export const login = async (req, res) => {
 // Logout
 export const logout = (req, res) => {
   try {
-    res.clearCookie("token");  // elimina la cookie del token JWT.
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Strict',
+    });
 
     res.status(200).json({ message: 'Sesión cerrada correctamente' });
   } catch (err) {

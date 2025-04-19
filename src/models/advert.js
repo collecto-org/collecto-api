@@ -12,10 +12,10 @@ const advertSchema = new mongoose.Schema({
   status: { type: String, required: true },
   isVisible: { type: Boolean, default: true },
   product_type: { type: String, required: true },
-  universe: { type: String, required: true },
+  universe: { type: mongoose.Schema.Types.ObjectId, ref: 'Universe', required: true },
   condition: { type: String, required: true },
-  collection: { type: String },                                    // Ojo!! Nombre reservado en Mongoose y podria petar en el futuro. Revisar
-  brand: { type: String },
+  collection: { type: mongoose.Schema.Types.ObjectId, ref: 'Collection' },
+  brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' },
   tags: [String],
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },

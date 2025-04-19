@@ -7,6 +7,12 @@ import usersRoutes from './routes/usersRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import shipmentRoutes from './routes/shipmentRoutes.js';
+import shippingProviderRoutes from './routes/shippingProviderRoutes.js';
+import universeRoutes from './routes/universeRoutes.js';
+import brandRoutes from './routes/brandRoutes.js';
+import collectionRoutes from './routes/collectionRoutes.js';
+
+
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import path from 'path';
@@ -38,7 +44,15 @@ app.use('/api/users', usersRoutes); // Gestión de usuarios
 app.use('/api/orders', orderRoutes); // Ordenes de pedido
 app.use('/api/payments', paymentRoutes); // Pagos
 app.use('/api/shipments', shipmentRoutes); // Envíos
+app.use('/api/shipping-providers', shippingProviderRoutes); // Proveedores de envío
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'))); // Servir imágenes estáticas
+
+
+app.use('/api/universes', universeRoutes); // Universos
+app.use('/api/brands', brandRoutes); // Marcas
+app.use('/api/collections', collectionRoutes); // Colecciones
+
+
 
 
 // Ruta básica de prueba
