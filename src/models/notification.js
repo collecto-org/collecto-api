@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const notificationSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
-  notificationType: { type: String, required: true },
+  notificationType: { type: mongoose.Schema.Types.ObjectId, ref: 'NotificationType', required: true },
   advertId: { type: mongoose.Schema.Types.ObjectId, ref: 'Advert' },
   message: { type: String, required: true },
   isRead: { type: Boolean, default: false },

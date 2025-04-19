@@ -17,6 +17,8 @@ import productTypeRoutes from './routes/productTypeRoutes.js';
 import conditionRoutes from './routes/conditionRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import shippingMethodRoutes from './routes/shippingMethodRoutes.js';
+import shipmentTrackingRoutes from './routes/shipmentTrackingRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 
 import cookieParser from 'cookie-parser';
@@ -53,15 +55,16 @@ app.use('/api/payments', paymentRoutes); // Pagos
 app.use('/api/shipments', shipmentRoutes); // Envíos
 app.use('/api/shipping-providers', shippingProviderRoutes); // Proveedores de envío
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'))); // Servir imágenes estáticas
-
+app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/universes', universeRoutes); // Universos
 app.use('/api/brands', brandRoutes); // Marcas
 app.use('/api/collections', collectionRoutes); // Colecciones
 app.use('/api/product-types', productTypeRoutes); // Tipos de productos
 app.use('/api/conditions', conditionRoutes); // Condiciones de los productos
-app.use('/api/transactions', transactionRoutes);
-app.use('/api/shippingMethods', shippingMethodRoutes);
+app.use('/api/transactions', transactionRoutes); // Transacciones de pago
+app.use('/api/shippingMethods', shippingMethodRoutes); // Métodos de envío
+app.use('/api/shipmentTracking', shipmentTrackingRoutes); // Tracking de envíos
 
 
 

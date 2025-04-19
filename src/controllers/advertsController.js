@@ -1,5 +1,6 @@
 import Advert from '../models/advert.js';
 import Notification from '../models/notification.js';
+import NotificationType from '../models/notificationType.js';
 import Status from '../models/status.js';
 import ShippingMethod from '../models/shippingMethod.js';
 import fs from 'fs';
@@ -211,6 +212,10 @@ export const updateAdvertStatus = async (req, res) => {
 
     await advert.save();
 
+    const notificationType = await NotificationType.findOne({ code: status }); // Obtener tipo de notificación
+
+    const message = `El anuncio "${advert.title}" ha cambiado su estado a ${status}.`;
+
     // Notificar a los usuarios si el anuncio está en favoritos
     const usersWithFavorite = await User.find({ 'favorites': advert._id });
 
@@ -218,9 +223,9 @@ export const updateAdvertStatus = async (req, res) => {
       usersWithFavorite.forEach(async (user) => {
         const newNotification = new Notification({
           user: user._id,
-          notificationType: 'status-change',
+          notificationType: notificationType._id,
           advertId: advert._id,
-          message: `El anuncio "${advert.title}" ha cambiado su estado a ${advert.status}.`,
+          message,
           isRead: false,
         });
         await newNotification.save();

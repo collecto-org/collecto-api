@@ -342,15 +342,10 @@ export const notifyFavoriteStatusChange = async (req, res) => {
     }
 
     // Crear el mensaje dependiendo del estado
-    let message = '';
+    const notificationType = await NotificationType.findOne({ code: 'favorite-status-change' });
 
-    if (status === 'sold') {
-      message = `El artículo "${advert.title}" ha sido marcado como vendido.`;
-    } else if (status === 'reserved') {
-      message = `El artículo "${advert.title}" ha sido marcado como reservado.`;
-    } else if (status === 'available') {
-      message = `El artículo "${advert.title}" vuelve a estar disponible.`;
-    }
+    const message = `El artículo "${advert.title}" ha sido marcado como ${status}.`;
+    
 
     // Crear la notificación
     const newNotification = new Notification({
