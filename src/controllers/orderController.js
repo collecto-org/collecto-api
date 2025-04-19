@@ -1,5 +1,6 @@
 import Order from '../models/order.js';
 import Advert from '../models/advert.js';
+import Status from '../models/status.js';
 
 // Crear una nueva orden
 export const createOrder = async (req, res) => {
@@ -17,12 +18,20 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'No puedes comprar tu propio anuncio' });
     }
 
+    const status = await Status.findOne({ code: 'pending' });
+
+    if (!status) {
+      return res.status(400).json({ message: 'Estado "pending" no encontrado' });
+    }
+
+
     const newOrder = new Order({
       buyerId,
       sellerId,
       advertId,
       price: advert.price,
       commission: 0,
+      paymentStatus: status._id,
     });
 
     await newOrder.save();
@@ -45,7 +54,8 @@ export const getOrderDetails = async (req, res) => {
     const order = await Order.findById(id)
       .populate('buyerId', 'username')
       .populate('sellerId', 'username')
-      .populate('advertId', 'title price');
+      .populate('advertId', 'title price')
+      .populate('paymentStatus');
 
     if (!order) {
       return res.status(404).json({ message: 'Orden no encontrada' });
@@ -67,8 +77,10 @@ export const updateOrderStatus = async (req, res) => {
   const userId = req.user;
 
   try {
-    if (!['pending', 'paid', 'shipped', 'delivered', 'cancelled'].includes(status)) {
-      return res.status(400).json({ message: 'Estado inválido. Debe ser "pending", "paid", "shipped", "delivered" o "cancelled".' });
+    const statusObj = await Status.findOne({ code: status });
+
+    if (!statusObj) {
+      return res.status(400).json({ message: 'Estado no válido' });
     }
 
     const order = await Order.findById(id);
@@ -81,7 +93,7 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(403).json({ message: 'No tienes permiso para actualizar el estado de esta orden' });
     }
 
-    order.paymentStatus = status;
+    order.paymentStatus = statusObj._id;
     order.updatedAt = new Date();
 
     await order.save();
@@ -116,7 +128,13 @@ export const cancelOrder = async (req, res) => {
       return res.status(403).json({ message: 'No tienes permiso para cancelar esta orden' });
     }
 
-    order.paymentStatus = 'cancelled';
+    const status = await Status.findOne({ code: 'cancelled' });
+
+    if (!status) {
+      return res.status(400).json({ message: 'Estado "cancelled" no encontrado' });
+    }
+
+    order.paymentStatus = status._id;
     order.updatedAt = new Date();
 
     await order.save();

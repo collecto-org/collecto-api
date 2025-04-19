@@ -9,7 +9,7 @@ const advertSchema = new mongoose.Schema({
   mainImage: { type: String, required: true },
   price: { type: Number, required: true },
   transaction: { type: String, required: true },
-  status: { type: String, required: true },
+  status: { type: mongoose.Schema.Types.ObjectId, ref: 'Status', required: true,},
   isVisible: { type: Boolean, default: true },
   product_type: { type: String, required: true },
   universe: { type: mongoose.Schema.Types.ObjectId, ref: 'Universe', required: true },

@@ -1,5 +1,6 @@
 import Advert from '../models/advert.js';
 import Notification from '../models/notification.js';
+import Status from '../models/status.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -184,13 +185,20 @@ export const updateAdvertStatus = async (req, res) => {
   const { status } = req.body;  // Estado
 
   try {
+    const statusObj = await Status.findOne({ code: status });
+
+    if (!statusObj) {
+      return res.status(400).json({ message: 'Estado no válido' });
+    }
+
     // Busca el anuncio por ID
     const advert = await Advert.findById(id);
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
 
-    advert.status = status;
+    advert.status = statusObj._id;
+    
     // Cambiar visibilidad
     if (status === 'vendido') {
       advert.isVisible = false;
@@ -295,15 +303,13 @@ export const createAdvert = async (req, res) => {
   } = req.body;
   const userId = req.user;
 
-  let uploadedImages = []; // Definida de forma explicita
+  let uploadedImages = [];
 
   try {
-    // Validación de los campos obligatorios                         Ojo!! Revisar
     if (!title || !description || !price || !transaction || !status || !product_type || !universe || !condition) {
       return res.status(400).json({ message: 'Faltan campos obligatorios' });
     }
 
-    // Precio sea mayor que 0
     if (price <= 0) {
       return res.status(400).json({ message: 'El precio debe ser mayor a 0' });
     }
@@ -324,7 +330,7 @@ export const createAdvert = async (req, res) => {
       description,
       price,
       transaction,
-      status,
+      status: availableStatus._id,
       product_type,
       universe,
       condition,

@@ -6,11 +6,7 @@ const orderSchema = new mongoose.Schema({
   advertId: { type: mongoose.Schema.Types.ObjectId, ref: 'Advert', required: true },
   price: { type: Number, required: true },
   commission: { type: Number, required: false },
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
-    default: 'pending',
-  },
+  paymentStatus: { type: mongoose.Schema.Types.ObjectId, ref: 'Status', required: true },
   paymentID: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', required: false },
   shippingMethod: { type: String, required: false },
   shippingAddress: { type: String, required: false },

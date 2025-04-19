@@ -4,6 +4,7 @@ import Provider from '../models/provider.js';
 import PaymentMethod from '../models/paymentMethod.js';
 
 
+
 // Iniciar un pago
 export const initiatePayment = async (req, res) => {
   const { orderId, paymentMethodID, amount, currency } = req.body;
@@ -64,7 +65,8 @@ export const getPaymentDetails = async (req, res) => {
     const payment = await Payment.findById(id)
       .populate('orderId', 'price status')
       .populate('providersId', 'code label')
-      .populate('paymentMethodID', 'code label');
+      .populate('paymentMethodID', 'code label')
+      .populate('statusId');
 
     if (!payment) {
       return res.status(404).json({ message: 'Pago no encontrado' });
@@ -84,7 +86,7 @@ export const getPaymentStatus = async (req, res) => {
   const { paymentId } = req.params;
 
   try {
-    const payment = await Payment.findById(paymentId);
+    const payment = await Payment.findById(paymentId).populate('statusId');
 
     if (!payment) {
       return res.status(404).json({ message: 'Pago no encontrado' });
