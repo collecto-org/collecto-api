@@ -1,14 +1,14 @@
 import Order from '../models/order.js';
 import Advert from '../models/advert.js';
 import Status from '../models/status.js';
+import ShippingMethod from '../models/shippingMethod.js';
 
 // Crear una nueva orden
 export const createOrder = async (req, res) => {
-  const { advertId } = req.body;
+  const { advertId, shippingMethodId, shippingAddress } = req.body;
   const buyerId = req.user;
   try {
     const advert = await Advert.findById(advertId);
-
     if (!advert || advert.status !== 'disponible') {
       return res.status(400).json({ message: 'El anuncio no está disponible para compra' });
     }
@@ -18,20 +18,19 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'No puedes comprar tu propio anuncio' });
     }
 
-    const status = await Status.findOne({ code: 'pending' });
-
-    if (!status) {
-      return res.status(400).json({ message: 'Estado "pending" no encontrado' });
+    const shippingMethod = await ShippingMethod.findById(shippingMethodId);
+    if (!shippingMethod || !shippingMethod.active) {
+      return res.status(400).json({ message: 'Método de envío no válido' });
     }
-
 
     const newOrder = new Order({
       buyerId,
       sellerId,
       advertId,
       price: advert.price,
+      shippingMethodId,
+      shippingAddress: shippingMethod.code !== 'pickup' ? shippingAddress : null,
       commission: 0,
-      paymentStatus: status._id,
     });
 
     await newOrder.save();

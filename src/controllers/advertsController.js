@@ -1,6 +1,7 @@
 import Advert from '../models/advert.js';
 import Notification from '../models/notification.js';
 import Status from '../models/status.js';
+import ShippingMethod from '../models/shippingMethod.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -66,7 +67,9 @@ export const getAllAdverts = async (req, res) => {
 export const getAdvertBySlug = async (req, res) => {
   const { slug } = req.params;
   try {
-    const advert = await Advert.findOne({ slug });
+    const advert = await Advert.findOne({ slug })
+      .populate('shippingMethodId', 'label')
+      .populate('user', 'username avatar');
 
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });

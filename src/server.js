@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
+
 import authRoutes from './routes/authRoutes.js';
 import advertsRoutes from './routes/advertsRoutes.js';
 import usersRoutes from './routes/usersRoutes.js';
@@ -12,6 +13,10 @@ import shippingProviderRoutes from './routes/shippingProviderRoutes.js';
 import universeRoutes from './routes/universeRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
 import collectionRoutes from './routes/collectionRoutes.js';
+import productTypeRoutes from './routes/productTypeRoutes.js';
+import conditionRoutes from './routes/conditionRoutes.js';
+import transactionRoutes from './routes/transactionRoutes.js';
+import shippingMethodRoutes from './routes/shippingMethodRoutes.js';
 
 
 import cookieParser from 'cookie-parser';
@@ -53,7 +58,10 @@ app.use('/images', express.static(path.join(__dirname, 'public', 'images'))); //
 app.use('/api/universes', universeRoutes); // Universos
 app.use('/api/brands', brandRoutes); // Marcas
 app.use('/api/collections', collectionRoutes); // Colecciones
-
+app.use('/api/product-types', productTypeRoutes); // Tipos de productos
+app.use('/api/conditions', conditionRoutes); // Condiciones de los productos
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/shippingMethods', shippingMethodRoutes);
 
 
 
