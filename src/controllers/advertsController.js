@@ -1,8 +1,9 @@
 import Advert from '../models/advert.js';
 import Notification from '../models/notification.js';
-import NotificationType from '../models/notificationType.js';
+import NotificationType from '../models/notificationTypes.js';
 import Status from '../models/status.js';
 import ShippingMethod from '../models/shippingMethod.js';
+import User from '../models/user.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

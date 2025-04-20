@@ -13,3 +13,60 @@ export const getAllUniverses = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener los universos', error: err.message });
   }
 };
+
+
+export const createUniverse = async (req, res) => {
+  try {
+    const { name, logoUrl, slug } = req.body;
+
+    const existing = await Universe.findOne({ slug });
+    if (existing) {
+      return res.status(400).json({ message: 'Ya existe un universo con ese slug.' });
+    }
+
+    const universe = new Universe({ name, logoUrl, slug });
+    await universe.save();
+
+    res.status(201).json(universe);
+  } catch (err) {
+    res.status(500).json({ message: 'Error al crear el universo', error: err.message });
+  }
+};
+
+
+export const updateUniverse = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, logoUrl, slug } = req.body;
+
+    const updated = await Universe.findByIdAndUpdate(
+      id,
+      { name, logoUrl, slug },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Universo no encontrado.' });
+    }
+
+    res.status(200).json(updated);
+  } catch (err) {
+    res.status(500).json({ message: 'Error al actualizar el universo', error: err.message });
+  }
+};
+
+
+export const deleteUniverse = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Universe.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Universo no encontrado.' });
+    }
+
+    res.status(200).json({ message: 'Universo eliminado.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al eliminar el universo', error: err.message });
+  }
+};

@@ -8,3 +8,4 @@ const universeSchema = new mongoose.Schema({
 
 const Universe = mongoose.model('Universe', universeSchema);
 export default Universe;
+
