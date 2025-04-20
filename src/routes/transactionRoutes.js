@@ -1,8 +1,21 @@
 import express from 'express';
-import { getAllTransactions } from '../controllers/transactionController.js';
+import { verifyToken } from '../middlewares/authMiddleware.js';
+import verifyAdmin from '../middlewares/adminMiddleware.js';
+import {
+  getAllTransactions,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
+} from '../controllers/transactionController.js';
 
 const router = express.Router();
 
-router.get('/', getAllTransactions); // Transacciones compra o venta
+// Rutas públicas para obtener transacciones
+router.get('/', getAllTransactions); // Mostrar todas las transacciones
+
+// Rutas protegidas para administradores
+router.post('/', verifyToken, verifyAdmin, createTransaction);  // Crear nueva transacción (solo admin)
+router.put('/:id', verifyToken, verifyAdmin, updateTransaction);  // Actualizar transacción (solo admin)
+router.delete('/:id', verifyToken, verifyAdmin, deleteTransaction);  // Eliminar transacción (solo admin)
 
 export default router;
