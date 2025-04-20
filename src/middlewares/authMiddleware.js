@@ -10,7 +10,10 @@ function verifyToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded.id;
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+    };
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
@@ -30,7 +33,10 @@ function loadUserIfAuthenticated(req, res, next) {
   if (token) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded.id;  // Asigna el ID del user
+      req.user = {
+        id: decoded.id,
+        role: decoded.role,
+      };
     } catch (error) {
       // Si el token es inválido (o ha expirado), no se asigna el req.user
       console.error('Token inválido o expirado:', error.message);

@@ -43,6 +43,7 @@ export const register = async (req, res) => {
 
     // Crear nuevo usuario
     const newUser = await User.create({
+      role: 'user',
       username,
       email,
       passwordHash,

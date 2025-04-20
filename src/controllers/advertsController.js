@@ -2,7 +2,6 @@ import Advert from '../models/advert.js';
 import Notification from '../models/notification.js';
 import NotificationType from '../models/notificationTypes.js';
 import Status from '../models/status.js';
-import ShippingMethod from '../models/shippingMethod.js';
 import User from '../models/user.js';
 import fs from 'fs';
 import path from 'path';
@@ -28,7 +27,7 @@ export const getAllAdverts = async (req, res) => {
 
     // Si el usuario está autenticado, indica si el anuncio es favorito
       if (req.user) {  // Si el usuario está autenticado
-        const user = await User.findById(req.user._id);
+        const user = await User.findById(req.user);
         const favorites = user.favorites.map(id => id.toString());
   
         const advertsWithFavStatus = adverts.map(advert => ({
@@ -70,7 +69,6 @@ export const getAdvertBySlug = async (req, res) => {
   const { slug } = req.params;
   try {
     const advert = await Advert.findOne({ slug })
-      .populate('shippingMethodId', 'label')
       .populate('user', 'username avatar');
 
     if (!advert) {
@@ -83,7 +81,7 @@ export const getAdvertBySlug = async (req, res) => {
     };
 
     if (req.user) {
-      const user = await User.findById(req.user._id);
+      const user = await User.findById(req.user);
       const isFavorite = user.favorites.includes(advert._id);
       advertWithImages.isFavorite = isFavorite;
     }
