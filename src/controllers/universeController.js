@@ -1,5 +1,6 @@
 import Universe from '../models/universe.js';
 
+// Ver los universos disponibles
 export const getAllUniverses = async (req, res) => {
   try {
     const universes = await Universe.find();
@@ -14,7 +15,7 @@ export const getAllUniverses = async (req, res) => {
   }
 };
 
-
+// Crear un nuevo universo (solo admin)
 export const createUniverse = async (req, res) => {
   try {
     const { name, logoUrl, slug } = req.body;
@@ -33,7 +34,7 @@ export const createUniverse = async (req, res) => {
   }
 };
 
-
+// Editar un nuevo universo (solo admin)
 export const updateUniverse = async (req, res) => {
   try {
     const { id } = req.params;
@@ -55,7 +56,7 @@ export const updateUniverse = async (req, res) => {
   }
 };
 
-
+// Eliminar un nuevo universo (solo admin)
 export const deleteUniverse = async (req, res) => {
   try {
     const { id } = req.params;
