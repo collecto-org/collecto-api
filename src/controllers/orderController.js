@@ -54,7 +54,8 @@ export const getOrderDetails = async (req, res) => {
       .populate('buyerId', 'username')
       .populate('sellerId', 'username')
       .populate('advertId', 'title price')
-      .populate('paymentStatus');
+      .populate('paymentStatus')
+      .populate('shippingMethodId');
 
     if (!order) {
       return res.status(404).json({ message: 'Orden no encontrada' });
