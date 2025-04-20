@@ -96,7 +96,7 @@ export const editUserProfile = async (req, res) => {
     uploadedAvatar = [avatarUrl];
   }
 
-  const allowedFields = ['email', 'firstName', 'lastName', 'phone', 'location', 'bio', 'direccionId']; 
+  const allowedFields = ['email', 'firstName', 'lastName', 'dateOfBirth', 'phone', 'location', 'bio', 'direccionId']; 
   const dataToUpdate = {};
 
   Object.keys(updatedData).forEach(field => {
