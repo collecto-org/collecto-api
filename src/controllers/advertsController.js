@@ -21,7 +21,8 @@ export const getAllAdverts = async (req, res) => {
     const adverts = await Advert.find()
       .sort({ [sortBy]: -1 })
       .skip((page - 1) * limit)
-      .limit(Number(limit));
+      .limit(Number(limit))
+      .populate('user', 'username avatar');
 
       const totalAdverts = await Advert.countDocuments(); // Consulta del total de anuncios disponibles
 
