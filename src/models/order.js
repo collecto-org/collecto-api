@@ -6,9 +6,9 @@ const orderSchema = new mongoose.Schema({
   advertId: { type: mongoose.Schema.Types.ObjectId, ref: 'Advert', required: true },
   price: { type: Number, required: true },
   commission: { type: Number, required: false },
-  paymentStatus: { type: mongoose.Schema.Types.ObjectId, ref: 'Status', required: true },
-  paymentID: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', required: false },
-  shippingMethodId: { type: mongoose.Schema.Types.ObjectId, ref: 'ShippingMethod', required: true },
+  paymentStatus: { type: mongoose.Schema.Types.ObjectId, ref: 'Status', required: true }, //
+  paymentID: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', required: false }, 
+  shippingMethodId: { type: mongoose.Schema.Types.ObjectId, ref: 'ShippingMethod', required: true }, //
   shippingAddress: { type: String, required: false },
   trackingCode: { type: String, required: false },
   notes: { type: String, required: false },

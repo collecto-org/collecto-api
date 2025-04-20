@@ -137,5 +137,5 @@ dist
 
 
 
-# Script de creación de admin
-createAdmin.js
+# Script de poblado de bbdd
+/seeders/

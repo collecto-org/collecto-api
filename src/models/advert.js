@@ -8,14 +8,14 @@ const advertSchema = new mongoose.Schema({
   description: { type: String, required: true },
   mainImage: { type: String, required: true },
   price: { type: Number, required: true },
-  transaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction', required: true },
-  status: { type: mongoose.Schema.Types.ObjectId, ref: 'Status', required: true,},
+  transaction: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction', required: true }, //
+  status: { type: mongoose.Schema.Types.ObjectId, ref: 'Status', required: true,}, //
   isVisible: { type: Boolean, default: true },
   product_type: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductType', required: true },
-  universe: { type: mongoose.Schema.Types.ObjectId, ref: 'Universe', required: true },
-  condition: { type: mongoose.Schema.Types.ObjectId, ref: 'Condition', required: true },
+  universe: { type: mongoose.Schema.Types.ObjectId, ref: 'Universe', required: true }, //
+  condition: { type: mongoose.Schema.Types.ObjectId, ref: 'Condition', required: true }, //
   collection: { type: mongoose.Schema.Types.ObjectId, ref: 'Collection' },
-  brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' },
+  brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' }, //
   tags: [String],
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },

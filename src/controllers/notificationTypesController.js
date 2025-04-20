@@ -1,4 +1,5 @@
 import NotificationType from '../models/notificationTypes.js';
+import { createNotificationMessage } from '../utils/notificationUtils.js';
 
 // Ver los tipos de notificación disponibles
 export const getAllNotificationTypes = async (req, res) => {
@@ -18,14 +19,14 @@ export const getAllNotificationTypes = async (req, res) => {
 // Crear nuevo tipo de notificación (solo admin)
 export const createNotificationType = async (req, res) => {
   try {
-    const { code, label, template } = req.body;
+    const { code, label, template, icon, order } = req.body;
 
     const existingType = await NotificationType.findOne({ code });
     if (existingType) {
       return res.status(400).json({ message: 'Ya existe un tipo de notificación con ese código.' });
     }
 
-    const newNotificationType = new NotificationType({ code, label, template });
+    const newNotificationType = new NotificationType({ code, label, template, icon, order });
     await newNotificationType.save();
 
     res.status(201).json(newNotificationType);
@@ -38,11 +39,11 @@ export const createNotificationType = async (req, res) => {
 export const updateNotificationType = async (req, res) => {
   try {
     const { id } = req.params;
-    const { code, label, template } = req.body;
+    const { code, label, template, icon, order } = req.body;
 
     const updatedNotificationType = await NotificationType.findByIdAndUpdate(
       id,
-      { code, label, template },
+      { code, label, template, icon, order },
       { new: true }
     );
 
@@ -70,4 +71,15 @@ export const deleteNotificationType = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Error al eliminar el tipo de notificación', error: err.message });
   }
+};
+
+// Crear el mensaje de notificación basado en el template
+export const generateNotificationMessage = async (typeCode, data) => { 
+  const notificationType = await NotificationType.findOne({ code: typeCode });
+
+  if (!notificationType) {
+    throw new Error('Tipo de notificación no encontrada');
+  }
+
+  return createNotificationMessage(notificationType.template, data);
 };
