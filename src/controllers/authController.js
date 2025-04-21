@@ -22,8 +22,13 @@ export const register = async (req, res) => {
 
   let avatarUrl;
 
+  // Subir el avatar a Cloudinary si se proporciona una imagen
   if (req.body.imageUrls && req.body.imageUrls.length > 0) {
-    avatarUrl = req.body.imageUrls[0];
+    const result = await cloudinary.uploader.upload(req.body.imageUrls[0], {
+      folder: 'avatars',  //  la imagen va a la carpeta avatars de cloudinary
+    });
+
+    avatarUrl = result.secure_url;
   }
 
   try {
@@ -83,13 +88,6 @@ export const register = async (req, res) => {
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
         console.log('Error al enviar el correo:', err);
-        if (uploadedAvatar.length > 0) {
-          uploadedAvatar.forEach(filePath => {
-            fs.unlink(path.join(__dirname, '..', filePath), (err) => {
-              if (err) console.error(`Error al eliminar archivo: ${filePath}`, err);
-            });
-          });
-        }
         return res.status(500).json({ message: 'Error al enviar correo de verificación' });
       }
 

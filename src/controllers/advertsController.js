@@ -349,6 +349,10 @@ export const createAdvert = async (req, res) => {
       return res.status(400).json({ message: 'Debe haber al menos un tag' });
     }
 
+    if (req.files && req.files.length > 6) {
+      return res.status(400).json({ message: 'No puedes subir más de 6 imágenes' });
+    }
+
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         const uploadResult = await cloudinary.uploader.upload(file.path, {
@@ -410,7 +414,7 @@ export const editAdvert = async (req, res) => {
 
   try {
     const advert = await Advert.findById(id);
-    
+
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
@@ -423,6 +427,12 @@ export const editAdvert = async (req, res) => {
       return res.status(403).json({ message: 'No tienes permiso para editar este anuncio.' });
     }
 
+    // Verificar que no se suben más de 5 imágenes en total
+    if (req.files && req.files.length + advert.images.length > 6) {
+      return res.status(400).json({ message: 'No puedes subir más de 6 imágenes.' });
+    }
+
+    // Eliminar imágenes no deseadas
     const imagesToDelete = advert.images.filter(image => !images.includes(image));
     if (imagesToDelete.length > 0) {
       imagesToDelete.forEach(imageUrl => {
@@ -435,7 +445,17 @@ export const editAdvert = async (req, res) => {
       });
     }
 
-    // Actualiza los campos
+    // Subir nuevas imágenes
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const uploadResult = await cloudinary.uploader.upload(file.path, {
+          folder: 'adverts',
+        });
+        newImages.push(uploadResult.secure_url);
+      }
+    }
+
+    // Actualizar el anuncio
     advert.title = title || advert.title;
     advert.description = description || advert.description;
     advert.price = price || advert.price;
@@ -447,7 +467,9 @@ export const editAdvert = async (req, res) => {
     advert.collection = collection || advert.collection;
     advert.brand = brand || advert.brand;
     advert.tags = tags || advert.tags;
-    advert.images = newImages.length > 0 ? newImages : advert.images;
+
+    advert.images = newImages.length > 0 ? [...advert.images, ...newImages] : advert.images;
+
     advert.updatedAt = Date.now();
 
     await advert.save();
@@ -471,6 +493,7 @@ export const editAdvert = async (req, res) => {
     res.status(500).json({ message: 'Error al actualizar el anuncio', error: err.message });
   }
 };
+
 
 
 // Borrar anuncio propio (Endpoint de Gestión de usuario)

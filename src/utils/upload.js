@@ -14,7 +14,7 @@ export const uploadToCloudinary = async (req, res, next) => {
 
       const imageUrls = [];
 
-      const folder = req.body.type === 'avatar' ? 'avatars' : 'adverts';
+      const folder = req.body.type === 'avatar' ? 'avatars' : `adverts/${req.user.id}`;
 
       for (const file of req.files) {
         const result = await cloudinary.uploader.upload_stream(
