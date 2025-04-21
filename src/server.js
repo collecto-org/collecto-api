@@ -23,16 +23,16 @@ import notificationRoutes from './routes/notificationRoutes.js';
 
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// import path from 'path';
+// import { fileURLToPath } from 'url';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 
 dotenv.config();
 
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -54,7 +54,7 @@ app.use('/api/orders', orderRoutes); // Ordenes de pedido
 app.use('/api/payments', paymentRoutes); // Pagos
 app.use('/api/shipments', shipmentRoutes); // Envíos
 app.use('/api/shipping-providers', shippingProviderRoutes); // Proveedores de envío
-app.use('/images', express.static(path.join(__dirname, 'public', 'images'))); // Servir imágenes estáticas
+// app.use('/images', express.static(path.join(__dirname, 'public', 'images'))); // Servir imágenes estáticas
 app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/universes', universeRoutes); // Universos

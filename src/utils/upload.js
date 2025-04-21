@@ -1,40 +1,43 @@
+import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const storage = multer.memoryStorage(); 
 
-// Configuración del almacenamiento de imágenes
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Determinar la carpeta según el tipo de archivo
-    const uploadPath = req.body.type === 'profile' 
-      ? path.join(__dirname, '../public/pictures') // Para el avatarde usuario, se guarda en la carpeta 'pictures'
-      : path.join(__dirname, '../public/images'); // Para las fotos de los anuncios, se guarda en la carpeta 'images'
-    
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    // Generar un nombre único para cada archivo
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
+const upload = multer({ storage: storage }).array('images', 5);
 
-// Validar el tipo de archivo: Solo permitir imágenes (jpeg, jpg, png, gif)
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Tipo de archivo no permitido. Solo se permiten imágenes.'), false);
+export const uploadToCloudinary = async (req, res, next) => {
+  try {
+    upload(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ message: 'Error al subir la imagen', error: err.message });
+      }
+
+      const imageUrls = [];
+
+      const folder = req.body.type === 'avatar' ? 'avatars' : 'adverts';
+
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload_stream(
+          { 
+            resource_type: 'auto', 
+            folder: folder,
+          },
+          (error, uploadResult) => {
+            if (error) {
+              return res.status(500).json({ message: 'Error al subir la imagen a Cloudinary', error: error.message });
+            }
+            imageUrls.push(uploadResult.secure_url);
+          }
+        );
+
+        file.stream.pipe(result);
+      }
+
+      req.body.imageUrls = imageUrls;
+
+      next();
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al procesar la subida', error: err.message });
   }
 };
-
-// Configuración de multer con validación de archivos y límite de imágenes
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,  // Validar el tipo de archivo
-}).array('images', 5);  // Limitar a un máximo de 5 imágenes
-
-export default upload;

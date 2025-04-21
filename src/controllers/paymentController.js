@@ -8,7 +8,7 @@ import PaymentMethod from '../models/paymentMethod.js';
 // Iniciar un pago
 export const initiatePayment = async (req, res) => {
   const { orderId, paymentMethodID, amount, currency } = req.body;
-  const userId = req.user;
+  const userId = req.user.id;
 
   try {
     const order = await Order.findById(orderId).populate('advertId');
@@ -104,7 +104,7 @@ export const getPaymentStatus = async (req, res) => {
 
 // Ver "Mis compras"
 export const getMyPurchases = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
 
   try {
     const payments = await Payment.find({ userId }).populate('orderId', 'advertId price');
@@ -121,7 +121,7 @@ export const getMyPurchases = async (req, res) => {
 
 // Ver "Mis ventas"
 export const getMySales = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
 
   try {
     const sales = await Payment.find({ sellerId: userId }).populate('orderId', 'advertId price');

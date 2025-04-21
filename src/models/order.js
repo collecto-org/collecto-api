@@ -16,6 +16,19 @@ const orderSchema = new mongoose.Schema({
   updatedAt: { type: Date, required: false },
 });
 
+
+// Excluir los campos sensibles en el método toJSON
+orderSchema.methods.toJSON = function () {
+  const order = this.toObject();
+
+  // Eliminar los campos sensibles
+  delete order.buyerId;
+  delete order.sellerId;
+
+  return order;
+};
+
+
 const Order = mongoose.model('Order', orderSchema);
 
 export default Order;

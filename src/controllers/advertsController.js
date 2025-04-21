@@ -3,66 +3,67 @@ import Notification from '../models/notification.js';
 import NotificationType from '../models/notificationTypes.js';
 import Status from '../models/status.js';
 import User from '../models/user.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { v2 as cloudinary } from 'cloudinary';
 
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-
-// Sacar todos los anuncios (con pag y filtros)
 export const getAllAdverts = async (req, res) => {
   try {
+    const { page = 1, limit = 10, sortBy = 'createdAt' } = req.query;
 
-    const { page = 1, limit = 10, sortBy = 'createdAt' } = req.query; 
-
+    // Consulta para obtener anuncios
     const adverts = await Advert.find()
       .sort({ [sortBy]: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .populate('user', 'username avatar');
 
-      const totalAdverts = await Advert.countDocuments(); // Consulta del total de anuncios disponibles
+    const totalAdverts = await Advert.countDocuments(); // Consulta del total de anuncios disponibles
 
-    // Si el usuario está autenticado, indica si el anuncio es favorito
-      if (req.user) {  // Si el usuario está autenticado
-        const user = await User.findById(req.user);
+    // Comprobar si el usuario está autenticado
+    const advertsWithFavStatus = []; // Inicializar el arreglo vacío
+
+    for (const advert of adverts) {
+      const advertObject = advert.toObject();
+
+      // Mapear las imágenes de cada anuncio para usar Cloudinary
+      const imagesWithUrls = advertObject.images.map(image => 
+        cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })
+      );
+
+      // Si el usuario está autenticado, añadir el estado de favorito
+      if (req.user) {
+        const userId = req.user.id;
+        const user = await User.findById(userId);
         const favorites = user.favorites.map(id => id.toString());
-  
-        const advertsWithFavStatus = adverts.map(advert => ({
-          ...advert.toObject(),
-          isFavorite: favorites.includes(advert._id.toString()) 
-        }));
 
-    // Verificar si no hay anuncios
-    if (!advertsWithFavStatus.length) {
+        const isFavorite = favorites.includes(advert._id.toString());
+        advertsWithFavStatus.push({
+          ...advertObject,
+          images: imagesWithUrls,
+          isFavorite
+        });
+      } else {
+        advertsWithFavStatus.push({
+          ...advertObject,
+          images: imagesWithUrls,
+        });
+      }
+    }
+
+    // Verificar si no se encontraron anuncios
+    if (advertsWithFavStatus.length === 0) {
       return res.status(404).json({ message: 'No se encontraron anuncios' });
     }
 
-    // Enviar los anuncios con la propiedad `isFavorite`
     return res.status(200).json({
-      total: totalAdverts, // Total de anuncios disponibles
-      adverts: advertsWithFavStatus, // Anuncios con el estado de favoritos
+      total: totalAdverts,
+      adverts: advertsWithFavStatus,
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener anuncios', error: err.message });
   }
-
-  if (!req.user) {
-    const advertsWithoutFavStatus = adverts.map(advert => ({
-      ...advert.toObject(),
-    }));
-
-    return res.status(200).json({
-      total: totalAdverts, // Total de anuncios disponibles
-      adverts: advertsWithoutFavStatus, // Anuncios sin el estado de favoritos
-    });
-  }
-
-} catch (err) {
-  res.status(500).json({ message: 'Error al obtener anuncios', error: err.message, stack: err.stack });
-}
 };
+
 
 
 // Detalle de un anuncio
@@ -78,12 +79,17 @@ export const getAdvertBySlug = async (req, res) => {
 
     const advertWithImages = {
       ...advert.toObject(),
-      images: advert.images.map(imagePath => path.basename(imagePath))
+      images: advert.images.map(imagePath => 
+        cloudinary.url(imagePath, { fetch_format: 'auto', quality: 'auto' })
+      ),
     };
 
     if (req.user) {
-      const user = await User.findById(req.user);
-      const isFavorite = user.favorites.includes(advert._id);
+      const userId = req.user.id; 
+      const user = await User.findById(userId);
+      const favorites = user.favorites.map(id => id.toString()); 
+
+      const isFavorite = favorites.includes(advert._id.toString());
       advertWithImages.isFavorite = isFavorite;
     }
 
@@ -92,6 +98,7 @@ export const getAdvertBySlug = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener el anuncio', error: err.message });
   }
 };
+
 
 
 // Filtro de anuncios
@@ -147,18 +154,25 @@ export const searchAdverts = async (req, res) => {
     }
 
     if (req.user) {
-      const user = await User.findById(req.user._id);
+      const userId = req.user.id;
+      const user = await User.findById(userId);
       const favorites = user.favorites.map(id => id.toString());
 
       const advertsWithFavStatus = adverts.map(advert => ({
         ...advert.toObject(),
-        isFavorite: favorites.includes(advert._id.toString()),
+        images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+        isFavorite: favorites.includes(advert._id.toString()),  // Verifica si el anuncio está en los favoritos
       }));
 
       return res.status(200).json({ adverts: advertsWithFavStatus });
     }
 
-    res.status(200).json({ adverts });
+    const advertsWithoutFavStatus = adverts.map(advert => ({
+      ...advert.toObject(),
+      images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+    }));
+
+    res.status(200).json({ adverts: advertsWithoutFavStatus });
   } catch (err) {
     res.status(500).json({ message: 'Error al buscar anuncios', error: err.message });
   }
@@ -253,12 +267,20 @@ export const uploadImages = async (req, res) => {
     return res.status(400).json({ message: 'No se han cargado imágenes' });
   }
 
-  const imagePaths = req.files.map(file => file.path);  // Saca las rutas de las imágenes
-
   try {
+    const imageUploadPromises = req.files.map(file => 
+      cloudinary.uploader.upload(file.path, {
+        folder: 'adverts',
+      })
+    );
+
+    const uploadResults = await Promise.all(imageUploadPromises);
+
+    const imageUrls = uploadResults.map(result => result.secure_url);
+
     const advert = await Advert.findByIdAndUpdate(
       advertId,
-      { $push: { images: { $each: imagePaths } } },  // mete las imágenes al array del anuncio
+      { $push: { images: { $each: imageUrls } } },
       { new: true }
     );
 
@@ -267,8 +289,8 @@ export const uploadImages = async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'Imágenes subidas',
-      images: imagePaths,
+      message: 'Imágenes subidas correctamente',
+      images: imageUrls,
     });
   } catch (err) {
     res.status(500).json({ message: 'Error al subir las imágenes', error: err.message });
@@ -309,9 +331,9 @@ export const createAdvert = async (req, res) => {
     brand,
     tags,
   } = req.body;
-  const userId = req.user;
+  const userId = req.user.id;
 
-  let uploadedImages = [];
+  let uploadedImages = req.body.imageUrls || [];
 
   try {
     if (!title || !description || !price || !transaction || !status || !product_type || !universe || !condition) {
@@ -327,9 +349,13 @@ export const createAdvert = async (req, res) => {
       return res.status(400).json({ message: 'Debe haber al menos un tag' });
     }
 
-    // Guardar las rutas de las imágenes si se subieron (solo los nombres de los archivos)
     if (req.files && req.files.length > 0) {
-      uploadedImages = req.files.map(file => file.filename); // Guardamos solo el nombre del archivo
+      for (const file of req.files) {
+        const uploadResult = await cloudinary.uploader.upload(file.path, {
+          folder: 'adverts',
+        });
+        uploadedImages.push(uploadResult.secure_url);
+      }
     }
 
     // Crear el nuevo anuncio
@@ -346,7 +372,7 @@ export const createAdvert = async (req, res) => {
       brand,
       tags,
       user: userId,
-      mainImage: req.files && req.files.length > 0 ? req.files[0].filename : '',
+      mainImage: uploadedImages.length > 0 ? uploadedImages[0] : '',
       images: uploadedImages,
     });
 
@@ -357,17 +383,6 @@ export const createAdvert = async (req, res) => {
       anuncio: newAdvert,
     });
   } catch (err) {
-    // Si ocurre un error al crear el anuncio, eliminamos las imágenes subidas
-    if (uploadedImages.length > 0) {
-      uploadedImages.forEach(fileName => {
-        // Eliminamos las imágenes del servidor
-        fs.unlink(path.join(__dirname, '..', 'public', 'images', fileName), (err) => {
-          if (err) {
-            console.error(`Error al eliminar archivo: ${fileName}`, err);
-          }
-        });
-      });
-    }
     res.status(500).json({ message: 'Error al crear el anuncio', error: err.message });
   }
 };
@@ -391,7 +406,7 @@ export const editAdvert = async (req, res) => {
     images,
   } = req.body;
 
-  let newImages = [];
+  let newImages = req.body.imageUrls || [];
 
   try {
     const advert = await Advert.findById(id);
@@ -404,22 +419,17 @@ export const editAdvert = async (req, res) => {
       return res.status(400).json({ message: 'No se puede editar un anuncio ya vendido.' });
     }
 
-    if (advert.user.toString() !== req.user) {
+    if (advert.user.toString() !== req.user.id) {
       return res.status(403).json({ message: 'No tienes permiso para editar este anuncio.' });
     }
 
-    // Guardar las nuevas imágenes que se están subiendo
-    if (req.files && req.files.length > 0) {
-      newImages = req.files.map(file => file.filename);
-    }
-
-    // Eliminar las imágenes antiguas que ya no están en el nuevo anuncio
     const imagesToDelete = advert.images.filter(image => !images.includes(image));
     if (imagesToDelete.length > 0) {
-      imagesToDelete.forEach(imagePath => {
-        fs.unlink(path.join(__dirname, '..', 'public', 'images', imagePath), (err) => {
+      imagesToDelete.forEach(imageUrl => {
+        const publicId = imageUrl.split('/').pop().split('.')[0];
+        cloudinary.uploader.destroy(publicId, (err) => {
           if (err) {
-            console.error(`Error al eliminar archivo: ${imagePath}`, err);
+            console.error(`Error al eliminar la imagen de Cloudinary: ${imageUrl}`, err);
           }
         });
       });
@@ -437,45 +447,27 @@ export const editAdvert = async (req, res) => {
     advert.collection = collection || advert.collection;
     advert.brand = brand || advert.brand;
     advert.tags = tags || advert.tags;
-    advert.images = images || advert.images;
-    
+    advert.images = newImages.length > 0 ? newImages : advert.images;
     advert.updatedAt = Date.now();
 
     await advert.save();
-
-    // Elimina las imágenes que ya no están en el anuncio si la edición tuvo éxito
-    if (imagesToDelete.length > 0) {
-      imagesToDelete.forEach(imagePath => {
-        fs.unlink(path.join(__dirname, '..', 'public', 'images', imagePath), (err) => {
-          if (err) {
-            console.error(`Error al eliminar archivo: ${imagePath}`, err);
-          }
-        });
-      });
-    }
-
-    // Se actualizan las imágenes del anuncio si la edición tuvo éxito
-    if (newImages.length > 0) {
-      advert.images.push(...newImages);
-      await advert.save();
-    }
 
     res.status(200).json({
       message: 'Anuncio actualizado',
       advert,
     });
   } catch (err) {
-    // Si ocurre un error al editar el anuncio, eliminamos las imágenes subidas
     if (newImages.length > 0) {
-      newImages.forEach(imagePath => {
-        fs.unlink(path.join(__dirname, '..', 'public', 'images', imagePath), (err) => {
+      newImages.forEach(imageUrl => {
+        const publicId = imageUrl.split('/').pop().split('.')[0];
+        cloudinary.uploader.destroy(publicId, (err) => {
           if (err) {
-            console.error(`Error al eliminar archivo nuevo: ${imagePath}`, err);
+            console.error(`Error al eliminar imagen de Cloudinary: ${imageUrl}`, err);
           }
         });
       });
     }
-    console.error(err);
+
     res.status(500).json({ message: 'Error al actualizar el anuncio', error: err.message });
   }
 };
@@ -492,16 +484,19 @@ export const deleteAdvert = async (req, res) => {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
 
-    // Si el anuncio tiene imágenes, las elimina del servidor
-    advert.images.forEach(imagePath => {
-      fs.unlink(path.join(__dirname, '..', 'public', 'images', imagePath), (err) => {
-        if (err) {
-          console.error(`Error al eliminar archivo: ${imagePath}`, err);
-        }
-      });
-    });
+    if (advert.images && advert.images.length > 0) {
+      advert.images.forEach(imageUrl => {
+        const publicId = imageUrl.split('/').pop().split('.')[0];
 
-    // Eliminar el anuncio
+        cloudinary.uploader.destroy(publicId, (err, result) => {
+          if (err) {
+            console.error(`Error al eliminar imagen de Cloudinary: ${imageUrl}`, err);
+          }
+        });
+      });
+    }
+
+    // Eliminar el anuncio de la base de datos
     await Advert.findByIdAndDelete(id);
 
     res.status(200).json({ message: 'Anuncio eliminado' });

@@ -6,7 +6,7 @@ import ShippingMethod from '../models/shippingMethod.js';
 // Crear una nueva orden
 export const createOrder = async (req, res) => {
   const { advertId, shippingMethodId, shippingAddress } = req.body;
-  const buyerId = req.user;
+  const buyerId = req.user.id;
   try {
     const advert = await Advert.findById(advertId);
     if (!advert || advert.status !== 'disponible') {
@@ -74,7 +74,7 @@ export const getOrderDetails = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-  const userId = req.user;
+  const userId = req.user.id;
 
   try {
     const statusObj = await Status.findOne({ code: status });
@@ -111,7 +111,7 @@ export const updateOrderStatus = async (req, res) => {
 // Cancelar una orden
 export const cancelOrder = async (req, res) => {
   const { id } = req.params;
-  const userId = req.user;
+  const userId = req.user.id;
 
   try {
     const order = await Order.findById(id);
@@ -151,7 +151,7 @@ export const cancelOrder = async (req, res) => {
 
 // Obtener todas las órdenes de un usuario autenticado
 export const getAllUserOrders = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
   const { orderId, page = 1, limit = 10 } = req.query;
 
   try {

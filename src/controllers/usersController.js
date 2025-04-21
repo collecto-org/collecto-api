@@ -2,12 +2,7 @@ import Advert from '../models/advert.js';
 import User from '../models/user.js';
 import Notification from '../models/notification.js';
 import Chat from '../models/chat.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { v2 as cloudinary } from 'cloudinary';
 
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
@@ -22,7 +17,6 @@ export const getUserAdverts = async (req, res) => {
     }
 
     const totalAdverts = await Advert.countDocuments({ user: user._id });
-
     const adverts = await Advert.find({ user: user._id });
 
     if (!adverts.length) {
@@ -34,6 +28,7 @@ export const getUserAdverts = async (req, res) => {
       
       const advertsWithFavStatus = adverts.map(advert => ({
         ...advert.toObject(),
+        images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
         isFavorite: favorites.includes(advert._id.toString())
       }));
 
@@ -43,9 +38,14 @@ export const getUserAdverts = async (req, res) => {
       });
     }
 
+    const advertsWithoutFavStatus = adverts.map(advert => ({
+      ...advert.toObject(),
+      images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+    }));
+
     res.status(200).json({
       total: totalAdverts,
-      adverts,
+      adverts: advertsWithoutFavStatus,
     });
 
   } catch (err) {
@@ -59,13 +59,15 @@ export const getUserAdverts = async (req, res) => {
 // Obtener datos del propio usuario (de si mismo)
 export const getCurrentUser = async (req, res) => {
   try {
-    const userId = req.user;
+    const userId = req.user.id;
 
     const user = await User.findById(userId).select('-passwordHash');
 
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
+
+    const avatarUrl = user.avatarUrl ? cloudinary.url(user.avatarUrl, { fetch_format: 'auto', quality: 'auto' }) : null;
 
     res.status(200).json({
       username: user.username,
@@ -85,21 +87,19 @@ export const getCurrentUser = async (req, res) => {
 
 // Editar perfil del usuario
 export const editUserProfile = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
   const updatedData = req.body;
 
   let avatarUrl;
-  let uploadedAvatar = [];
 
-  if (req.files && req.files.length > 0) {
-    avatarUrl = req.files[0].path;
-    uploadedAvatar = [avatarUrl];
+  if (req.body.imageUrls && req.body.imageUrls.length > 0) {
+    avatarUrl = req.body.imageUrls[0];
   }
 
-  const allowedFields = ['email', 'firstName', 'lastName', 'dateOfBirth', 'phone', 'location', 'bio', 'direccionId']; 
+  const allowedFields = ['email', 'firstName', 'lastName', 'dateOfBirth', 'phone', 'location', 'bio'];
   const dataToUpdate = {};
 
-  Object.keys(updatedData).forEach(field => {
+  Object.keys(updatedData).forEach((field) => {
     if (allowedFields.includes(field)) {
       dataToUpdate[field] = updatedData[field];
     }
@@ -116,43 +116,28 @@ export const editUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    if (user.avatarUrl) {
-      fs.unlink(path.join(__dirname, '..', 'public', 'pictures', user.avatarUrl), (err) => {
-        if (err) {
-          console.error(`Error al eliminar el avatar del usuario: ${user.avatarUrl}`, err);
-        }
-      });
+    if (user.avatarUrl && avatarUrl !== user.avatarUrl) {
+      const publicId = user.avatarUrl.split('/').pop().split('.')[0];
+      await cloudinary.uploader.destroy(publicId);
     }
 
+    // Actualizamos el usuario
     const updatedUser = await User.findByIdAndUpdate(userId, dataToUpdate, { new: true });
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'Error al actualizar el perfil' });
-    }
 
     res.status(200).json({
       message: 'Perfil actualizado correctamente',
       user: updatedUser,
     });
   } catch (err) {
-    if (uploadedAvatar.length > 0) {
-      uploadedAvatar.forEach(filePath => {
-        fs.unlink(path.join(__dirname, '..', filePath), (err) => {
-          if (err) {
-            console.error(`Error al eliminar archivo: ${filePath}`, err);
-          }
-        });
-      });
-    }
-
     res.status(500).json({ message: 'Error al actualizar el perfil', error: err.message });
   }
 };
 
 
+
 // Eliminar el perfil del usuario
 export const deleteUserProfile = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
 
   try {
     const user = await User.findById(userId);
@@ -161,15 +146,12 @@ export const deleteUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    if (user.avatarUrl) {
-      fs.unlink(path.join(__dirname, '..', 'public', 'pictures', user.avatarUrl), (err) => {
-        if (err) {
-          console.error(`Error al eliminar el avatar del usuario: ${user.avatarUrl}`, err);
-        }
-      });
-    }
-
     await User.findByIdAndDelete(userId);
+
+    if (user.avatarUrl) {
+      const publicId = user.avatarUrl.split('/').pop().split('.')[0];
+      await cloudinary.uploader.destroy(publicId);
+    }
 
     res.status(200).json({ message: 'Cuenta eliminada' });
   } catch (err) {
@@ -182,7 +164,7 @@ export const deleteUserProfile = async (req, res) => {
 // Ver anuncios de uno mismo
 export const getOwnAdverts = async (req, res) => {
   try {
-    const userId = req.user;
+    const userId = req.user.id;
 
     const adverts = await Advert.find({ user: userId });
     const totalAdverts = await Advert.countDocuments({ user: userId });
@@ -204,7 +186,7 @@ export const getOwnAdverts = async (req, res) => {
 // Obtener "Mis anuncios favoritos" (favoritos del usuario autenticado)
 export const getUserFavorites = async (req, res) => {
   try {
-    const userId = req.user;
+    const userId = req.user.id;
 
     const user = await User.findById(userId).populate('favorites');
     const totalFavorites = user.favorites.length;
@@ -225,7 +207,7 @@ export const getUserFavorites = async (req, res) => {
 
 // Agregar un anuncio a favoritos
 export const addFavorite = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
   const { listingId } = req.params;
 
   try {
@@ -251,7 +233,7 @@ export const addFavorite = async (req, res) => {
 
 // Eliminar un anuncio de favoritos
 export const removeFavorite = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
   const { listingId } = req.params;
 
   try {
@@ -279,7 +261,7 @@ export const removeFavorite = async (req, res) => {
 // Obtener "Mis notificaciones"
 export const getUserNotifications = async (req, res) => {
   try {
-    const userId = req.user;
+    const userId = req.user.id;
 
     const notifications = await Notification.find({ user: userId }).populate('advertId', 'title');
 
@@ -297,7 +279,7 @@ export const getUserNotifications = async (req, res) => {
 // Marcar notificación como leída
 export const markNotificationAsRead = async (req, res) => {
   try {
-    const userId = req.user;
+    const userId = req.user.id;
     const notificationId = req.params.id;
 
     const notification = await Notification.findById(notificationId);
@@ -322,7 +304,7 @@ export const markNotificationAsRead = async (req, res) => {
 
 // Notificación de cambio de estado de favorito (vendido/reservado/disponible)
 export const notifyFavoriteStatusChange = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
   const { advertId, status } = req.body;
 
   try {
@@ -390,7 +372,7 @@ export const notifyPriceChange = async (req, res) => {
     // Enviar notificación a cada usuario
     usersWithFavorite.forEach(async (user) => {
       const newNotification = new Notification({
-        user: user._id,
+        user: user.id,
         notificationType: priceChangeNotificationType,
         message: `El artículo "${advert.title}" ha cambiado de precio.`,
         read: false,
@@ -427,7 +409,7 @@ export const notifyFavoriteRemoved = async (req, res) => {
     // Enviar notificación a cada usuario
     usersWithFavorite.forEach(async (user) => {
       const newNotification = new Notification({
-        user: user._id,
+        user: user.id,
         notificationType: favoriteRemovedNotificationType,
         message: `El artículo "${advert.title}" ha sido eliminado de tus favoritos.`,
         read: false,
@@ -445,7 +427,7 @@ export const notifyFavoriteRemoved = async (req, res) => {
 
 // Notificación de nuevo mensaje en el chat
 export const notifyNewChatMessage = async (req, res) => {
-  const { chatId } = req.body;  // El id del chat
+  const { chatId } = req.body;
 
   try {
     const chat = await Chat.findById(chatId)
@@ -461,9 +443,11 @@ export const notifyNewChatMessage = async (req, res) => {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
 
-    const userIds = chat.users.map(user => user._id);
+    const userIds = chat.users.map(user => user.id);
 
-    const message = `Tienes un nuevo mensaje en la conversación sobre "${advert.title}".`;
+    // Trunca el título del anuncio si es muy largo
+    const truncatedTitle = advert.title.length > 50 ? advert.title.substring(0, 50) + '...' : advert.title;
+    const message = `Tienes un nuevo mensaje en la conversación sobre "${truncatedTitle}".`;
 
     for (const userId of userIds) {
       const newNotification = new Notification({
@@ -471,8 +455,8 @@ export const notifyNewChatMessage = async (req, res) => {
         notificationType: 'new-chat-message',
         message,
         read: false,
-        advert: advert._id,
-        chatId: chat._id,
+        advert: advert.id,
+        chatId: chat.id,
       });
 
       await newNotification.save();
@@ -488,7 +472,7 @@ export const notifyNewChatMessage = async (req, res) => {
 // Crear conversación por anuncio
 export const createChat = async (req, res) => {
   const { listingId } = req.params;
-  const userId = req.user; 
+  const userId = req.user.id; 
 
   try {
     const advert = await Advert.findById(listingId);
@@ -511,18 +495,19 @@ export const createChat = async (req, res) => {
       await chat.save();
     }
 
-    res.status(201).json({ chatId: chat._id });
+    res.status(201).json({ chatId: chat.id });
   } catch (err) {
     res.status(500).json({ message: 'Error al crear la conversación', error: err.message });
   }
 };
 
 
+
 // Enviar mensaje en un chat
 export const sendMessageToChat = async (req, res) => {
   const { chatId } = req.params;
   const { content } = req.body;
-  const senderId = req.user;
+  const senderId = req.user.id;
 
   try {
     const chat = await Chat.findById(chatId).populate('users');
@@ -548,7 +533,7 @@ export const sendMessageToChat = async (req, res) => {
 
     if (receiver) {
       const notification = new Notification({
-        user: receiver._id,
+        user: receiver.id,
         notificationType: 'new-chat-message',
         message: `Tienes un nuevo mensaje en la conversación sobre "${chat.advertId.title}".`,
         advertId: chat.advertId,
@@ -568,14 +553,14 @@ export const sendMessageToChat = async (req, res) => {
 
 // Obtener todas las conversaciones del usuario
 export const getUserChats = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
 
   try {
     // Buscar todos los chats
     const chats = await Chat.find({ users: userId })
-      .populate('advertId', 'title') // Poblar el anuncio relacionado
-      .populate('users', 'username') // Poblar los usuarios involucrados en el chat
-      .sort({ 'messages.createdAt': -1 }); // Ordenar por la última actividad en el chat
+      .populate('advertId', 'title')
+      .populate('users', 'username avatar')
+      .sort({ 'messages.createdAt': -1 });
 
     if (!chats.length) {
       return res.status(404).json({ message: 'No tienes conversaciones.' });
@@ -583,7 +568,7 @@ export const getUserChats = async (req, res) => {
 
     // Crear una vista previa para cada chat
     const chatPreviews = chats.map(chat => {
-      const lastMessage = chat.messages[chat.messages.length - 1]; // Último mensaje
+      const lastMessage = chat.messages[chat.messages.length - 1];
       const previewMessage = lastMessage ? `${lastMessage.content.substring(0, 30)}...` : 'No hay mensajes aún';
       return {
         chatId: chat._id,
@@ -601,9 +586,10 @@ export const getUserChats = async (req, res) => {
 };
 
 
+
 // Ver un chat en particular
 export const getChatMessages = async (req, res) => {
-  const userId = req.user;
+  const userId = req.user.id;
   const { chatId } = req.params;
 
   try {
@@ -619,9 +605,11 @@ export const getChatMessages = async (req, res) => {
       return res.status(403).json({ message: 'No tienes permiso para ver este chat' });
     }
 
-    // Crear una lista con los mensajes y sus timestamps
     const messages = chat.messages.map(message => ({
-      sender: message.sender,
+      sender: {
+        username: message.sender.username,
+        avatarUrl: message.sender.avatarUrl || 'default_avatar_url',  // Default avatar si no está disponible (pendiente de definir)
+      },
       content: message.content,
       createdAt: message.createdAt,
     }));
@@ -631,3 +619,4 @@ export const getChatMessages = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener los mensajes del chat', error: err.message });
   }
 };
+

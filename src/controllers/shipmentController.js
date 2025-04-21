@@ -5,7 +5,7 @@ import ShippingProvider from '../models/shippingProvider.js';
 // Crear un nuevo envío
 export const createShipment = async (req, res) => {
   const { orderId, shippingProviderId, trackingCode, estimatedDate } = req.body;
-  const userId = req.user;
+  const userId = req.user.id;
 
   try {
     const order = await Order.findById(orderId);

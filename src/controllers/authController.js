@@ -2,8 +2,7 @@ import bcrypt from 'bcrypt';
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import fs from 'fs';
-import path from 'path';
+import cloudinary from '../config/cloudinaryConfig.js';
 
 
 // Sign up
@@ -22,12 +21,9 @@ export const register = async (req, res) => {
   } = req.body;
 
   let avatarUrl;
-  let uploadedAvatar = [];
 
-
-  if (req.files && req.files.length > 0) {
-    avatarUrl = req.files[0].path;
-    uploadedAvatar = [avatarUrl];
+  if (req.body.imageUrls && req.body.imageUrls.length > 0) {
+    avatarUrl = req.body.imageUrls[0];
   }
 
   try {
@@ -119,7 +115,8 @@ export const register = async (req, res) => {
         user: {
           id: newUser._id,
           username: newUser.username,
-          email: newUser.email
+          email: newUser.email,
+          avatarUrl: newUser.avatarUrl,
         }
       });
     });

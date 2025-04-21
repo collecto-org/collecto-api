@@ -1,5 +1,5 @@
 import express from 'express';
-import upload from '../utils/upload.js';
+import { uploadToCloudinary } from '../utils/upload.js';
 import { verifyToken, loadUserIfAuthenticated } from '../middlewares/authMiddleware.js';
 import verifyAdvertOwner from '../middlewares/verifyAdvertOwner.js';
 import {
@@ -24,12 +24,12 @@ router.get('/:slug', loadUserIfAuthenticated, getAdvertBySlug); // Detalles del 
 // router.get('/:slug/status', getAdvertStatusBySlug); // Ver estado del anuncio       // MARECADO PARA BORRAR
 // Ver anuncios de un usuario específico se encuentra en usersRoutes.js
 router.patch('/:id/status', verifyToken, updateAdvertStatus);  // Cambiar estado y visibilidad del anuncio
-router.post('/:id/picture', verifyToken, upload, uploadImages); // Subir imagenes
+router.post('/:id/picture', verifyToken, uploadToCloudinary, uploadImages); // Subir imagenes
 router.get('/:id/picture', loadUserIfAuthenticated, getImages); // Ver imágenes de un anuncio
 
 // Gestión de usuarios
-router.post('/', verifyToken, upload, createAdvert); // Crear nuevo anuncio
-router.put('/:id', verifyToken, verifyAdvertOwner, upload, editAdvert);  // Editar anuncio
+router.post('/', verifyToken, uploadToCloudinary, createAdvert); // Crear nuevo anuncio
+router.put('/:id', verifyToken, verifyAdvertOwner, uploadToCloudinary, editAdvert);  // Editar anuncio
 router.delete('/:id', verifyToken, verifyAdvertOwner, deleteAdvert); // Eliminar anuncio
 
 export default router;
