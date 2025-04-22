@@ -8,6 +8,7 @@ const shipmentTrackingSchema = new mongoose.Schema({
   estimatedDate: { type: Date },
   deliveredAt: { type: Date },
   history: [{ type: mongoose.Schema.Types.Mixed }],
+  lastEventDate: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date },
 });
