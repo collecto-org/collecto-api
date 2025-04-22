@@ -146,13 +146,15 @@ export const searchAdverts = async (req, res) => {
     }
     if (slug) query.slug = { $regex: slug, $options: 'i' };
 
+    const totalAdverts = await Advert.countDocuments(query);
+
     const adverts = await Advert.find(query)
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .sort({ [sortBy]: sortOrder });
 
     if (!adverts.length) {
-      return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total: 0 });
+      return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total: totalAdverts });
     }
 
     if (req.user) {
@@ -163,10 +165,10 @@ export const searchAdverts = async (req, res) => {
       const advertsWithFavStatus = adverts.map(advert => ({
         ...advert.toObject(),
         images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
-        isFavorite: favorites.includes(advert._id.toString()),  // Verifica si el anuncio está en los favoritos
+        isFavorite: favorites.includes(advert._id.toString()),
       }));
 
-      return res.status(200).json({ adverts: advertsWithFavStatus });
+      return res.status(200).json({ adverts: advertsWithFavStatus, total: totalAdverts });
     }
 
     const advertsWithoutFavStatus = adverts.map(advert => ({
@@ -174,7 +176,7 @@ export const searchAdverts = async (req, res) => {
       images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
     }));
 
-    res.status(200).json({ adverts: advertsWithoutFavStatus });
+    res.status(200).json({ adverts: advertsWithoutFavStatus, total: totalAdverts });
   } catch (err) {
     res.status(500).json({ message: 'Error al buscar anuncios', error: err.message });
   }
