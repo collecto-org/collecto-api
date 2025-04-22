@@ -3,17 +3,56 @@ import multer from 'multer';
 import streamifier from 'streamifier';
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage }).array('images', 5);
 
-export const uploadToCloudinary = async (req, res, next) => {
+const uploadAvatar = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+}).single('image');
+
+const uploadAdverts = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+}).array('images', 6);
+
+// Subir el avatar
+export const uploadAvatarToCloudinary = async (req, res, next) => {
   try {
-    upload(req, res, async (err) => {
+    uploadAvatar(req, res, async (err) => {
       if (err) {
-        return res.status(400).json({ message: 'Error al subir la imagen', error: err.message });
+        return res.status(400).json({ message: 'Error al subir el avatar', error: err.message });
+      }
+
+      if (req.file) {
+        const result = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'avatars',
+        });
+
+        req.body.avatarUrl = result.secure_url;
+      } else {
+        return res.status(400).json({ message: 'No se ha proporcionado una imagen para el avatar' });
+      }
+
+      next();
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al procesar la subida del avatar', error: err.message });
+  }
+};
+
+// Subir las imagenes de adverts
+export const uploadAdvertsToCloudinary = async (req, res, next) => {
+  if (req.files && req.files.length > 6) {
+    return res.status(400).json({ message: 'No puedes subir más de 6 imágenes' });
+  }
+
+  try {
+    uploadAdverts(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ message: 'Error al subir las imágenes del anuncio', error: err.message });
       }
 
       const imageUrls = [];
-      const folder = req.body.type === 'avatar' ? 'avatars' : `adverts/${req.user.id}`;
+      const folder = `adverts/${req.user.id}`;
 
       const uploadToCloudinaryStream = (fileBuffer) => {
         return new Promise((resolve, reject) => {
@@ -42,6 +81,6 @@ export const uploadToCloudinary = async (req, res, next) => {
       next();
     });
   } catch (err) {
-    res.status(500).json({ message: 'Error al procesar la subida', error: err.message });
-  }
+    res.status(500).json({ message: 'Error al procesar la subida de las imágenes del anuncio', error: err.message });
+  }
 };

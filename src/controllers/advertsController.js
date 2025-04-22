@@ -270,15 +270,7 @@ export const uploadImages = async (req, res) => {
   }
 
   try {
-    const imageUploadPromises = req.files.map(file => 
-      cloudinary.uploader.upload(file.path, {
-        folder: 'adverts',
-      })
-    );
-
-    const uploadResults = await Promise.all(imageUploadPromises);
-
-    const imageUrls = uploadResults.map(result => result.secure_url);
+    const imageUrls = req.body.imageUrls;
 
     const advert = await Advert.findByIdAndUpdate(
       advertId,
@@ -350,10 +342,6 @@ export const createAdvert = async (req, res) => {
       return res.status(400).json({ message: 'Debe haber al menos un tag' });
     }
 
-    if (uploadedImages.length > 6) {
-      return res.status(400).json({ message: 'No puedes subir más de 6 imágenes' });
-    }
-
     const newAdvert = new Advert({
       title,
       description,
@@ -416,11 +404,6 @@ export const editAdvert = async (req, res) => {
 
     if (advert.user.toString() !== req.user.id) {
       return res.status(403).json({ message: 'No tienes permiso para editar este anuncio.' });
-    }
-
-    // Verificar que no se suben más de 6 imágenes en total
-    if (req.files && req.files.length + advert.images.length > 6) {
-      return res.status(400).json({ message: 'No puedes subir más de 6 imágenes.' });
     }
 
     // Eliminar imágenes no deseadas
