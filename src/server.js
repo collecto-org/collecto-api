@@ -19,7 +19,9 @@ import transactionRoutes from './routes/transactionRoutes.js';
 import shippingMethodRoutes from './routes/shippingMethodRoutes.js';
 import shipmentTrackingRoutes from './routes/shipmentTrackingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+=
 import addressRoutes from './routes/addressRoutes.js';
+
 
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -65,7 +67,6 @@ app.use('/api/conditions', conditionRoutes); // Condiciones de los productos
 app.use('/api/transactions', transactionRoutes); // Transacciones de pago
 app.use('/api/shippingMethods', shippingMethodRoutes); // Métodos de envío
 app.use('/api/shipmentTracking', shipmentTrackingRoutes); // Tracking de envíos
-app.use('/api/addresses', addressRoutes); // Direcciones de envío
 
 
 // Ruta básica de prueba
