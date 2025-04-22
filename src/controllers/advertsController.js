@@ -15,8 +15,13 @@ export const getAllAdverts = async (req, res) => {
       .sort({ [sortBy]: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .populate('user', 'username avatar')
-      .populate('brand', 'name');
+      .populate('transaction')
+      .populate('status')
+      .populate('product_type')
+      .populate('universe')
+      .populate('condition')
+      .populate('brand')
+      .populate('user'); 
 
     const totalAdverts = await Advert.countDocuments(); // Consulta del total de anuncios disponibles
 
@@ -72,8 +77,13 @@ export const getAdvertBySlug = async (req, res) => {
   const { slug } = req.params;
   try {
     const advert = await Advert.findOne({ slug })
-      .populate('user', 'username avatar')
-      .populate('brand', 'name');
+    .populate('transaction')
+    .populate('status')
+    .populate('product_type')
+    .populate('universe')
+    .populate('condition')
+    .populate('brand')
+    .populate('user'); 
 
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
@@ -151,7 +161,14 @@ export const searchAdverts = async (req, res) => {
     const adverts = await Advert.find(query)
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .sort({ [sortBy]: sortOrder });
+      .sort({ [sortBy]: sortOrder })
+      .populate('transaction')
+      .populate('status')
+      .populate('product_type')
+      .populate('universe')
+      .populate('condition')
+      .populate('brand')
+      .populate('user');
 
     if (!adverts.length) {
       return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total: totalAdverts });
