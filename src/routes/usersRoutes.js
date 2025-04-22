@@ -1,6 +1,6 @@
 import express from 'express';
 import { verifyToken, loadUserIfAuthenticated  } from '../middlewares/authMiddleware.js';
-import { uploadToCloudinary } from '../utils/upload.js';
+import { uploadAvatarToCloudinary  } from '../utils/upload.js';
 import {
   getUserAdverts,
   getCurrentUser,
@@ -31,7 +31,7 @@ router.get('/:username/listings', getUserAdverts); // Ver anuncios de un usuario
 
 // Gestión de usuarios
 router.get('/me', verifyToken, loadUserIfAuthenticated, getCurrentUser); // Obtener datos del propio usuario
-router.put('/me', verifyToken, loadUserIfAuthenticated, uploadToCloudinary, editUserProfile); // Editar perfil del usuario
+router.put('/me', verifyToken, loadUserIfAuthenticated, uploadAvatarToCloudinary , editUserProfile); // Editar perfil del usuario
 router.delete('/me', verifyToken, loadUserIfAuthenticated, deleteUserProfile); // Eliminar perfil del usuario
 router.get('/me/adverts', verifyToken, loadUserIfAuthenticated, getOwnAdverts); // Ver anuncios de uno mismo
 // Crear nuevo anuncio se encuentra en advertsRoutes.js
