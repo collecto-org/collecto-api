@@ -1,4 +1,4 @@
-import { getCountries, getStates, getCities } from '../services/geonames';
+import { getCountries, getStates, getCities } from '../services/geonames.js';
 
 // Obtener la lista de países
 export const fetchCountries = async (req, res) => {

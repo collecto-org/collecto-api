@@ -19,6 +19,8 @@ import transactionRoutes from './routes/transactionRoutes.js';
 import shippingMethodRoutes from './routes/shippingMethodRoutes.js';
 import shipmentTrackingRoutes from './routes/shipmentTrackingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+=
+import addressRoutes from './routes/addressRoutes.js';
 
 
 import cookieParser from 'cookie-parser';
