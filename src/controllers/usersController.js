@@ -2,7 +2,7 @@ import Advert from '../models/advert.js';
 import User from '../models/user.js';
 import Notification from '../models/notification.js';
 import Chat from '../models/chat.js';
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary } from 'cloudinary';  
 
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
@@ -90,38 +90,33 @@ export const editUserProfile = async (req, res) => {
   const userId = req.user.id;
   const updatedData = req.body;
 
-  let avatarUrl;
-
-  if (req.body.imageUrls && req.body.imageUrls.length > 0) {
-    avatarUrl = req.body.imageUrls[0];
-  }
-
-  const allowedFields = ['email', 'firstName', 'lastName', 'dateOfBirth', 'phone', 'location', 'bio'];
-  const dataToUpdate = {};
-
-  Object.keys(updatedData).forEach((field) => {
-    if (allowedFields.includes(field)) {
-      dataToUpdate[field] = updatedData[field];
-    }
-  });
-
-  if (avatarUrl) {
-    dataToUpdate.avatarUrl = avatarUrl;
-  }
-
   try {
-    const user = await User.findById(userId);
+    const allowedFields = ['email', 'firstName', 'lastName', 'dateOfBirth', 'phone', 'location', 'bio'];
+    const dataToUpdate = {};
 
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+    // Filtrar solo los campos permitidos
+    Object.keys(updatedData).forEach((field) => {
+      if (allowedFields.includes(field)) {
+        dataToUpdate[field] = updatedData[field];
+      }
+    });
+
+    if (req.body.avatarUrl) {
+      const user = await User.findById(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+
+      // Si el avatar ha cambiado, eliminar el antiguo de Cloudinary
+      if (user.avatarUrl && req.body.avatarUrl !== user.avatarUrl) {
+        const publicId = user.avatarUrl.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(publicId);
+      }
+
+      dataToUpdate.avatarUrl = req.body.avatarUrl;
     }
 
-    if (user.avatarUrl && avatarUrl !== user.avatarUrl) {
-      const publicId = user.avatarUrl.split('/').pop().split('.')[0];
-      await cloudinary.uploader.destroy(publicId);
-    }
-
-    // Actualizamos el usuario
     const updatedUser = await User.findByIdAndUpdate(userId, dataToUpdate, { new: true });
 
     res.status(200).json({

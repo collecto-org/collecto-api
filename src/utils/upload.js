@@ -2,58 +2,34 @@ import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
 import streamifier from 'streamifier';
 
-const storage = multer.memoryStorage();
+const storage = multer.memoryStorage();  // Usamos la memoria del servidor para los archivos
 
-const uploadAvatar = multer({
+// Configuración de multer para subir imágenes (avatar o anuncios)
+const uploadImages = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-}).single('image');
+  limits: { fileSize: 10 * 1024 * 1024 },  // Límite de tamaño de archivo (10MB)
+}).array('images', 6);  // Permite subir hasta 6 imágenes
 
-const uploadAdverts = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-}).array('images', 6);
-
-// Subir el avatar
-export const uploadAvatarToCloudinary = async (req, res, next) => {
+// Middleware para subir avatar o imágenes de anuncios
+export const uploadImagesToCloudinary = async (req, res, next) => {
   try {
-    uploadAvatar(req, res, async (err) => {
+    uploadImages(req, res, async (err) => {
       if (err) {
-        return res.status(400).json({ message: 'Error al subir el avatar', error: err.message });
+        return res.status(400).json({ message: 'Error al subir las imágenes', error: err.message });
       }
 
-      if (req.file) {
-        const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: 'avatars',
-        });
+      const imageUrls = [];  // Para almacenar las URLs de las imágenes subidas
 
-        req.body.avatarUrl = result.secure_url;
-      } else {
-        return res.status(400).json({ message: 'No se ha proporcionado una imagen para el avatar' });
+      let folder = 'avatars';  // Por defecto, la carpeta será 'avatars' (para el avatar del usuario)
+
+      // Si el avatar es subido, asignamos la URL del avatar y lo subimos a la carpeta 'avatars'
+      if (req.files.length === 1 && req.body.isAvatar) {
+        folder = 'avatars';  // Aseguramos que siempre se sube a 'avatars'
+      } else if (req.files.length > 0) {
+        folder = `adverts/${req.user.id}`;  // Si es un anuncio, lo subimos a una carpeta única del usuario dentro de 'adverts'
       }
 
-      next();
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Error al procesar la subida del avatar', error: err.message });
-  }
-};
-
-// Subir las imagenes de adverts
-export const uploadAdvertsToCloudinary = async (req, res, next) => {
-  if (req.files && req.files.length > 6) {
-    return res.status(400).json({ message: 'No puedes subir más de 6 imágenes' });
-  }
-
-  try {
-    uploadAdverts(req, res, async (err) => {
-      if (err) {
-        return res.status(400).json({ message: 'Error al subir las imágenes del anuncio', error: err.message });
-      }
-
-      const imageUrls = [];
-      const folder = `adverts/${req.user.id}`;
-
+      // Función para subir imágenes a Cloudinary
       const uploadToCloudinaryStream = (fileBuffer) => {
         return new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
@@ -71,16 +47,22 @@ export const uploadAdvertsToCloudinary = async (req, res, next) => {
         });
       };
 
+      // Subimos las imágenes a Cloudinary
       for (const file of req.files) {
         const result = await uploadToCloudinaryStream(file.buffer);
         imageUrls.push(result.secure_url);
       }
 
-      req.body.imageUrls = imageUrls;
+      // Si es un avatar, guardamos solo la primera imagen en 'avatarUrl'
+      if (req.body.isAvatar) {
+        req.body.avatarUrl = imageUrls[0];  // Solo usamos la primera imagen como avatar
+      } else {
+        req.body.imageUrls = imageUrls;  // Si son imágenes del anuncio, las almacenamos todas en 'imageUrls'
+      }
 
-      next();
+      next();  // Continuamos con la siguiente etapa
     });
   } catch (err) {
-    res.status(500).json({ message: 'Error al procesar la subida de las imágenes del anuncio', error: err.message });
+    res.status(500).json({ message: 'Error al procesar la subida de imágenes', error: err.message });
   }
 };

@@ -2,9 +2,8 @@ import bcrypt from 'bcrypt';
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import { uploadAvatarToCloudinary } from '../utils/upload.js'; // Importar la función de subida
 
-// Sign up
+// Registrar un nuevo usuario
 export const register = async (req, res) => {
   const { 
     username, 
@@ -16,114 +15,99 @@ export const register = async (req, res) => {
     phone, 
     location, 
     bio, 
-    direccionId 
+    direccionId,
+    avatarUrl // <- ya viene de req.body gracias al middleware
   } = req.body;
 
-  let avatarUrl;
-
-  // Middleware de subida de avatar
-  uploadAvatarToCloudinary(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: 'Error al subir el avatar', error: err.message });
+  try {
+    // Verificar si el usuario ya existe
+    const userExists = await User.findOne({ $or: [{ email }, { username }] });
+    if (userExists) {
+      return res.status(400).json({ message: 'El usuario ya existe' });
     }
 
-    // Si el avatar se sube correctamente, obtenemos la URL
-    if (req.body.avatarUrl) {
-      avatarUrl = req.body.avatarUrl;
-    }
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    try {
-      // Verificar si el usuario ya existe
-      const userExists = await User.findOne({ $or: [{ email }, { username }] });
+    const newUser = await User.create({
+      role: 'user',
+      username,
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+      dateOfBirth,
+      phone,
+      location,
+      avatarUrl,
+      bio,
+      direccionId,
+    });
 
-      if (userExists) {
-        return res.status(400).json({ message: 'El usuario ya existe' });
+    // Token de verificación de email (expira en 1h)
+    const emailVerificationToken = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    // Configurar el transportador de correo
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    // Configura las opciones del correo
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: newUser.email,
+      subject: 'Verificación de cuenta',
+      html: `
+        <p>Gracias por registrarte. Por favor, haz clic en el siguiente enlace para verificar tu correo electrónico:</p> 
+        <a href="http://localhost:3000/verify-email/${emailVerificationToken}">Verificar mi correo electrónico</a>
+      `,
+    };
+
+    // Enviar el correo de verificación
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        console.log('Error al enviar el correo:', err);
+        return res.status(500).json({ message: 'Error al enviar correo de verificación' });
       }
 
-      // Hashear la contraseña
-      const passwordHash = await bcrypt.hash(password, 10);
+      console.log('Correo de verificación enviado:', info.response);
 
-      // Crear nuevo usuario
-      const newUser = await User.create({
-        role: 'user',
-        username,
-        email,
-        passwordHash,
-        firstName,
-        lastName,
-        dateOfBirth,
-        phone,
-        location,
-        avatarUrl,
-        bio,
-        direccionId,
+      // Generar el token JWT para autenticación
+      const token = jwt.sign(
+        { id: newUser._id, username: newUser.username },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+      // ENVÍA EL TOKEN JWT COMO COOKIE HTTP-ONLY
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 3600000, // la cookie expira en 1 hora
+        sameSite: 'Strict',
       });
 
-      // Token de verificación de email (expira en 1h)
-      const emailVerificationToken = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-      // Configurar el transportador de correo
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
-
-      // Configura las opciones del correo
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: newUser.email,
-        subject: 'Verificación de cuenta',
-        html: `
-          <p>Gracias por registrarte. Por favor, haz clic en el siguiente enlace para verificar tu correo electrónico:</p> 
-          <a href="http://localhost:3000/verify-email/${emailVerificationToken}">Verificar mi correo electrónico</a>
-        `,
-      };
-
-      // Enviar el correo de verificación
-      transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-          console.log('Error al enviar el correo:', err);
-          return res.status(500).json({ message: 'Error al enviar correo de verificación' });
+      // Responder después de enviar el correo
+      res.status(201).json({
+        message: 'Usuario registrado. Verifica tu correo para activarlo.',
+        user: {
+          id: newUser._id,
+          username: newUser.username,
+          email: newUser.email,
+          avatarUrl: newUser.avatarUrl,
         }
-
-        console.log('Correo de verificación enviado:', info.response);
-
-        // Generar el token JWT para autenticación
-        const token = jwt.sign(
-          { id: newUser._id, username: newUser.username },
-          process.env.JWT_SECRET,
-          { expiresIn: '1h' }
-        );
-        // ENVÍA EL TOKEN JWT COMO COOKIE HTTP-ONLY
-        res.cookie('token', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 3600000, // la cookie expira en 1 hora
-          sameSite: 'Strict',
-        });
-
-        // Responder después de enviar el correo
-        res.status(201).json({
-          message: 'Usuario registrado. Verifica tu correo para activarlo.',
-          user: {
-            id: newUser._id,
-            username: newUser.username,
-            email: newUser.email,
-            avatarUrl: newUser.avatarUrl,
-          }
-        });
       });
-    } catch (err) {
-      res.status(500).json({ message: 'Error al registrar usuario', error: err.message });
-    }
-  });
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al registrar usuario', error: err.message });
+  }
 };
+
 
 
 

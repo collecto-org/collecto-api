@@ -71,7 +71,6 @@ export const getAllAdverts = async (req, res) => {
 };
 
 
-
 // Detalle de un anuncio
 export const getAdvertBySlug = async (req, res) => {
   const { slug } = req.params;
@@ -110,7 +109,6 @@ export const getAdvertBySlug = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener el anuncio', error: err.message });
   }
 };
-
 
 
 // Filtro de anuncios
@@ -281,55 +279,55 @@ export const updateAdvertStatus = async (req, res) => {
 
 
 // Subir imagen de un anuncio
-export const uploadImages = async (req, res) => {
-  const advertId = req.params.id;
-
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ message: 'No se han cargado imágenes' });
-  }
-
-  try {
-    const imageUrls = req.body.imageUrls;
-
-    const advert = await Advert.findByIdAndUpdate(
-      advertId,
-      { $push: { images: { $each: imageUrls } } },
-      { new: true }
-    );
-
-    if (!advert) {
-      return res.status(404).json({ message: 'Anuncio no encontrado' });
-    }
-
-    res.status(201).json({
-      message: 'Imágenes subidas correctamente',
-      images: imageUrls,
-    });
-  } catch (err) {
-    res.status(500).json({ message: 'Error al subir las imágenes', error: err.message });
-  }
-};
+//export const uploadImages = async (req, res) => {
+//  const advertId = req.params.id;
+//
+//  if (!req.files || req.files.length === 0) {
+//    return res.status(400).json({ message: 'No se han cargado imágenes' });
+//  }
+//
+//  try {
+//    const imageUrls = req.body.imageUrls;
+//
+//    const advert = await Advert.findByIdAndUpdate(
+//      advertId,
+//      { $push: { images: { $each: imageUrls } } },
+//      { new: true }
+//    );
+//
+//    if (!advert) {
+//      return res.status(404).json({ message: 'Anuncio no encontrado' });
+//    }
+//
+//    res.status(201).json({
+//      message: 'Imágenes subidas correctamente',
+//      images: imageUrls,
+//    });
+//  } catch (err) {
+//    res.status(500).json({ message: 'Error al subir las imágenes', error: err.message });
+//  }
+//};
 
 
 // Ver todas las imágenes del un anuncio
-export const getImages = async (req, res) => {
-  const advertId = req.params.id;
+//export const getImages = async (req, res) => {
+//  const advertId = req.params.id;
+//
+//  try {
+//    const advert = await Advert.findById(advertId);
+//
+//    if (!advert) {
+//      return res.status(404).json({ message: 'Anuncio no encontrado' });
+//    }
+//
+//    res.status(200).json({ images: advert.images });
+//  } catch (err) {
+//    res.status(500).json({ message: 'Error al obtener las imágenes', error: err.message });
+//  }
+//};
 
-  try {
-    const advert = await Advert.findById(advertId);
 
-    if (!advert) {
-      return res.status(404).json({ message: 'Anuncio no encontrado' });
-    }
-
-    res.status(200).json({ images: advert.images });
-  } catch (err) {
-    res.status(500).json({ message: 'Error al obtener las imágenes', error: err.message });
-  }
-};
-
-
-// Crear nuevo anuncio (Endpoint de Gestión de usuario)
+// Crear un nuevo anuncio
 export const createAdvert = async (req, res) => {
   const {
     title,
@@ -346,7 +344,7 @@ export const createAdvert = async (req, res) => {
   } = req.body;
   const userId = req.user.id;
 
-  const uploadedImages = req.body.imageUrls || [];
+  const uploadedImages = req.body.imageUrls || [];  // Usamos las imágenes procesadas por el middleware
 
   try {
     if (!title || !description || !price || !transaction || !status || !product_type || !universe || !condition) {
@@ -390,7 +388,10 @@ export const createAdvert = async (req, res) => {
 };
 
 
-// Editar un anuncio propio (Endpoint de Gestión de usuario)
+
+
+
+// Editar un anuncio (Endpoint para gestionar anuncios)
 export const editAdvert = async (req, res) => {
   const { id } = req.params;
   const {
@@ -408,7 +409,7 @@ export const editAdvert = async (req, res) => {
     images,
   } = req.body;
 
-  let newImages = req.body.imageUrls || [];
+  let newImages = req.body.imageUrls || [];  // Usamos las imágenes procesadas por el middleware
 
   try {
     const advert = await Advert.findById(id);
@@ -465,6 +466,7 @@ export const editAdvert = async (req, res) => {
     res.status(500).json({ message: 'Error al actualizar el anuncio', error: err.message });
   }
 };
+
 
 
 

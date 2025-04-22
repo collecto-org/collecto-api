@@ -1,6 +1,6 @@
 import express from 'express';
 import { verifyToken } from '../middlewares/authMiddleware.js';
-import { uploadAvatarToCloudinary  } from '../utils/upload.js';
+import { uploadImagesToCloudinary  } from '../utils/upload.js';
 import {
   register,
   verifyRegisterEmail,
@@ -13,7 +13,7 @@ import {
 const router = express.Router();
 
 // Autenticación y gestión de sesión
-router.post('/register', register, uploadAvatarToCloudinary ); // Sign up
+router.post('/register', uploadImagesToCloudinary, register ); // Sign up
 router.get('/verify-email/:token', verifyRegisterEmail); // Verificar el correo
 
 router.post('/login', login);  // Login (con opción de "Recordar sesión")
