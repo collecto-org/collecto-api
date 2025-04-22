@@ -9,7 +9,7 @@ const orderSchema = new mongoose.Schema({
   paymentStatus: { type: mongoose.Schema.Types.ObjectId, ref: 'Status', required: true }, //
   paymentID: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', required: false }, 
   shippingMethodId: { type: mongoose.Schema.Types.ObjectId, ref: 'ShippingMethod', required: true }, //
-  shippingAddress: { type: String, required: false },
+  shippingAddress: { type: mongoose.Schema.Types.ObjectId, ref: 'Address', required: false },
   trackingCode: { type: String, required: false },
   notes: { type: String, required: false },
   createdAt: { type: Date, default: Date.now },
