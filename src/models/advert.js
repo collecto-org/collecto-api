@@ -13,7 +13,7 @@ const advertSchema = new mongoose.Schema({
   product_type: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductType', required: true },
   universe: { type: mongoose.Schema.Types.ObjectId, ref: 'Universe', required: true },
   condition: { type: mongoose.Schema.Types.ObjectId, ref: 'Condition', required: true },
-  collection: { type: mongoose.Schema.Types.ObjectId, ref: 'Collection' },
+  collection: { type: String },
   brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' },
   tags: [String],
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

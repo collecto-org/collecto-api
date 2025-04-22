@@ -22,13 +22,8 @@ export const register = async (req, res) => {
 
   let avatarUrl;
 
-  // Subir el avatar a Cloudinary si se proporciona una imagen
   if (req.body.imageUrls && req.body.imageUrls.length > 0) {
-    const result = await cloudinary.uploader.upload(req.body.imageUrls[0], {
-      folder: 'avatars',  //  la imagen va a la carpeta avatars de cloudinary
-    });
-
-    avatarUrl = result.secure_url;
+    avatarUrl = req.body.imageUrls[0];
   }
 
   try {

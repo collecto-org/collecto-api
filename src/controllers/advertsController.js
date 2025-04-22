@@ -15,7 +15,8 @@ export const getAllAdverts = async (req, res) => {
       .sort({ [sortBy]: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .populate('user', 'username avatar');
+      .populate('user', 'username avatar')
+      .populate('brand', 'name');
 
     const totalAdverts = await Advert.countDocuments(); // Consulta del total de anuncios disponibles
 
@@ -71,7 +72,8 @@ export const getAdvertBySlug = async (req, res) => {
   const { slug } = req.params;
   try {
     const advert = await Advert.findOne({ slug })
-      .populate('user', 'username avatar');
+      .populate('user', 'username avatar')
+      .populate('brand', 'name');
 
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
@@ -150,7 +152,7 @@ export const searchAdverts = async (req, res) => {
       .sort({ [sortBy]: sortOrder });
 
     if (!adverts.length) {
-      return res.status(404).json({ message: 'No se encontraron anuncios' });
+      return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total: 0 });
     }
 
     if (req.user) {
@@ -333,7 +335,7 @@ export const createAdvert = async (req, res) => {
   } = req.body;
   const userId = req.user.id;
 
-  let uploadedImages = req.body.imageUrls || [];
+  const uploadedImages = req.body.imageUrls || [];
 
   try {
     if (!title || !description || !price || !transaction || !status || !product_type || !universe || !condition) {
@@ -344,31 +346,20 @@ export const createAdvert = async (req, res) => {
       return res.status(400).json({ message: 'El precio debe ser mayor a 0' });
     }
 
-    // Al menos un tag
     if (tags && tags.length === 0) {
       return res.status(400).json({ message: 'Debe haber al menos un tag' });
     }
 
-    if (req.files && req.files.length > 6) {
+    if (uploadedImages.length > 6) {
       return res.status(400).json({ message: 'No puedes subir más de 6 imágenes' });
     }
 
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const uploadResult = await cloudinary.uploader.upload(file.path, {
-          folder: 'adverts',
-        });
-        uploadedImages.push(uploadResult.secure_url);
-      }
-    }
-
-    // Crear el nuevo anuncio
     const newAdvert = new Advert({
       title,
       description,
       price,
       transaction,
-      status: availableStatus._id,
+      status, 
       product_type,
       universe,
       condition,
@@ -427,7 +418,7 @@ export const editAdvert = async (req, res) => {
       return res.status(403).json({ message: 'No tienes permiso para editar este anuncio.' });
     }
 
-    // Verificar que no se suben más de 5 imágenes en total
+    // Verificar que no se suben más de 6 imágenes en total
     if (req.files && req.files.length + advert.images.length > 6) {
       return res.status(400).json({ message: 'No puedes subir más de 6 imágenes.' });
     }
@@ -443,16 +434,6 @@ export const editAdvert = async (req, res) => {
           }
         });
       });
-    }
-
-    // Subir nuevas imágenes
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const uploadResult = await cloudinary.uploader.upload(file.path, {
-          folder: 'adverts',
-        });
-        newImages.push(uploadResult.secure_url);
-      }
     }
 
     // Actualizar el anuncio
@@ -479,17 +460,6 @@ export const editAdvert = async (req, res) => {
       advert,
     });
   } catch (err) {
-    if (newImages.length > 0) {
-      newImages.forEach(imageUrl => {
-        const publicId = imageUrl.split('/').pop().split('.')[0];
-        cloudinary.uploader.destroy(publicId, (err) => {
-          if (err) {
-            console.error(`Error al eliminar imagen de Cloudinary: ${imageUrl}`, err);
-          }
-        });
-      });
-    }
-
     res.status(500).json({ message: 'Error al actualizar el anuncio', error: err.message });
   }
 };

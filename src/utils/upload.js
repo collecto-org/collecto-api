@@ -1,8 +1,8 @@
 import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
+import streamifier from 'streamifier';
 
-const storage = multer.memoryStorage(); 
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }).array('images', 5);
 
 export const uploadToCloudinary = async (req, res, next) => {
@@ -13,24 +13,28 @@ export const uploadToCloudinary = async (req, res, next) => {
       }
 
       const imageUrls = [];
-
       const folder = req.body.type === 'avatar' ? 'avatars' : `adverts/${req.user.id}`;
 
-      for (const file of req.files) {
-        const result = await cloudinary.uploader.upload_stream(
-          { 
-            resource_type: 'auto', 
-            folder: folder,
-          },
-          (error, uploadResult) => {
-            if (error) {
-              return res.status(500).json({ message: 'Error al subir la imagen a Cloudinary', error: error.message });
+      const uploadToCloudinaryStream = (fileBuffer) => {
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              resource_type: 'auto',
+              folder: folder,
+            },
+            (error, result) => {
+              if (error) return reject(error);
+              resolve(result);
             }
-            imageUrls.push(uploadResult.secure_url);
-          }
-        );
+          );
 
-        file.stream.pipe(result);
+          streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+        });
+      };
+
+      for (const file of req.files) {
+        const result = await uploadToCloudinaryStream(file.buffer);
+        imageUrls.push(result.secure_url);
       }
 
       req.body.imageUrls = imageUrls;
@@ -38,6 +42,6 @@ export const uploadToCloudinary = async (req, res, next) => {
       next();
     });
   } catch (err) {
-    res.status(500).json({ message: 'Error al procesar la subida', error: err.message });
-  }
+    res.status(500).json({ message: 'Error al procesar la subida', error: err.message });
+  }
 };

@@ -41,6 +41,7 @@
     "slugify": "^1.6.6",
     "socket.io": "^4.8.1",
     "sparse-bitfield": "^3.0.3",
+    "streamifier": "^0.1.1",
     "swagger-ui-express": "^5.0.1",
     "tr46": "^5.1.0",
     "webidl-conversions": "^7.0.0",
