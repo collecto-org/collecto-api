@@ -19,7 +19,6 @@ import transactionRoutes from './routes/transactionRoutes.js';
 import shippingMethodRoutes from './routes/shippingMethodRoutes.js';
 import shipmentTrackingRoutes from './routes/shipmentTrackingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
-=
 import addressRoutes from './routes/addressRoutes.js';
 
 
@@ -81,3 +80,21 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // Conf
 
 // Arrancar servidor
 app.listen(PORT, () => {console.log(`Servidor escuchando en http://localhost:${PORT}`);});
+
+// Mostrar solo errores detallados en entorno de desarrollo
+app.use((err, req, res, next) => {
+    const isDev = process.env.NODE_ENV !== "production";
+    console.error("Error capturado por middleware:");
+    console.error("Ruta:", req.method, req.originalUrl);
+    if (isDev) {
+      console.error("Headers:", req.headers);
+      console.error("Body:", req.body);
+      console.error("Error:", err.message);
+      console.error("Stacktrace:\n", err.stack);
+    }
+  
+    res.status(err.status || 500).json({
+      message: err.message || "Error interno del servidor",
+      ...(isDev && { error: err.stack }), 
+    });
+  });

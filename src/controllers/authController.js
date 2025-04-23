@@ -16,23 +16,22 @@ export const register = async (req, res) => {
     phone, 
     location, 
     bio, 
-    direccionId 
+    direccionId,
+    avatarUrl: avatarUrlFromBody 
   } = req.body;
 
-  let avatarUrl;
+  let avatarUrl = avatarUrlFromBody || "";
+
+  
 
   // Middleware de subida de avatar
-  uploadAvatarToCloudinary(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: 'Error al subir el avatar', error: err.message });
+  try {
+     // Si el avatar se sube correctamente, obtenemos la URL
+    if (req.file) {
+      const result = await uploadAvatarToCloudinary(req.file);
+      avatarUrl = result.secure_url;
     }
 
-    // Si el avatar se sube correctamente, obtenemos la URL
-    if (req.body.avatarUrl) {
-      avatarUrl = req.body.avatarUrl;
-    }
-
-    try {
       // Verificar si el usuario ya existe
       const userExists = await User.findOne({ $or: [{ email }, { username }] });
 
@@ -122,8 +121,7 @@ export const register = async (req, res) => {
     } catch (err) {
       res.status(500).json({ message: 'Error al registrar usuario', error: err.message });
     }
-  });
-};
+  }
 
 
 

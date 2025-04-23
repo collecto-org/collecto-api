@@ -3,10 +3,11 @@ import Notification from '../models/notification.js';
 import NotificationType from '../models/notificationTypes.js';
 import Status from '../models/status.js';
 import User from '../models/user.js';
-import { v2 as cloudinary } from 'cloudinary';
+//import { v2 as cloudinary } from 'cloudinary';
+import cloudinary from '../config/cloudinaryConfig.js'
 
 
-export const getAllAdverts = async (req, res) => {
+export const getAllAdverts = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, sortBy = 'createdAt' } = req.query;
 
@@ -32,9 +33,11 @@ export const getAllAdverts = async (req, res) => {
       const advertObject = advert.toObject();
 
       // Mapear las imágenes de cada anuncio para usar Cloudinary
-      const imagesWithUrls = advertObject.images.map(image => 
-        cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })
-      );
+      const imagesWithUrls = Array.isArray(advertObject.images)
+      ? advertObject.images.map(image =>
+          cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })
+        )
+      : [];
 
       // Si el usuario está autenticado, añadir el estado de favorito
       if (req.user) {
@@ -66,6 +69,7 @@ export const getAllAdverts = async (req, res) => {
       adverts: advertsWithFavStatus,
     });
   } catch (err) {
+    next(err); 
     res.status(500).json({ message: 'Error al obtener anuncios', error: err.message });
   }
 };
