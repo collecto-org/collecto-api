@@ -5,14 +5,14 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import advertsRoutes from './routes/advertsRoutes.js';
 import usersRoutes from './routes/usersRoutes.js';
-import statusRoutes from './routes/statusRoutes.js';
+import statusRoutes from './routes/statusRoutes.js'; // Aqui está status
 import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import shipmentRoutes from './routes/shipmentRoutes.js';
 import shippingProviderRoutes from './routes/shippingProviderRoutes.js';
 import universeRoutes from './routes/universeRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
-import collectionRoutes from './routes/collectionRoutes.js';
+import collectionrefRoutes from './routes/collectionrefRoutes.js';
 import productTypeRoutes from './routes/productTypeRoutes.js';
 import conditionRoutes from './routes/conditionRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
@@ -50,7 +50,7 @@ app.use(cors({ origin: 'http://localhost:5173', credentials: true})); // Habilit
 app.use('/api/auth', authRoutes); // Autenticación y gestión de sesión
 app.use('/api/adverts', advertsRoutes); // Anuncios
 app.use('/api/users', usersRoutes); // Gestión de usuarios
-app.use('/api', statusRoutes); // Estado de las ordenes, anuncios y pagos
+app.use('/api', statusRoutes); // Estado de las ordenes, anuncios y pagos  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< STATUS
 app.use('/api/orders', orderRoutes); // Ordenes de pedido
 app.use('/api/payments', paymentRoutes); // Pagos
 app.use('/api/shipments', shipmentRoutes); // Envíos
@@ -60,12 +60,13 @@ app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/universes', universeRoutes); // Universos
 app.use('/api/brands', brandRoutes); // Marcas
-app.use('/api/collections', collectionRoutes); // Colecciones
+app.use('/api/collectionrefs', collectionrefRoutes); // Colecciones
 app.use('/api/product-types', productTypeRoutes); // Tipos de productos
 app.use('/api/conditions', conditionRoutes); // Condiciones de los productos
 app.use('/api/transactions', transactionRoutes); // Transacciones de pago
 app.use('/api/shippingMethods', shippingMethodRoutes); // Métodos de envío
 app.use('/api/shipmentTracking', shipmentTrackingRoutes); // Tracking de envíos
+app.use('/api/address', addressRoutes); // Direcciones
 
 
 // Ruta básica de prueba

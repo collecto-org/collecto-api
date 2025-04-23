@@ -6,7 +6,7 @@ import PaymentMethod from '../models/paymentMethod.js';
 
 
 // Iniciar un pago
-export const initiatePayment = async (req, res) => {
+export const initiatePayment = async (req, res, next) => {
   const { orderId, paymentMethodID, amount, currency } = req.body;
   const userId = req.user.id;
 
@@ -52,13 +52,14 @@ export const initiatePayment = async (req, res) => {
       pago: newPayment,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al iniciar el proceso de compra', error: err.message });
   }
 };
 
 
 // Obtener detalles de un pago
-export const getPaymentDetails = async (req, res) => {
+export const getPaymentDetails = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -76,13 +77,14 @@ export const getPaymentDetails = async (req, res) => {
       pago: payment,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los detalles del pago', error: err.message });
   }
 };
 
 
 // Consultar estado de un pago
-export const getPaymentStatus = async (req, res) => {
+export const getPaymentStatus = async (req, res, next) => {
   const { paymentId } = req.params;
 
   try {
@@ -97,13 +99,14 @@ export const getPaymentStatus = async (req, res) => {
       message: `Pago procesado correctamente`,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al consultar el estado del pago', error: err.message });
   }
 };
 
 
 // Ver "Mis compras"
-export const getMyPurchases = async (req, res) => {
+export const getMyPurchases = async (req, res, next) => {
   const userId = req.user.id;
 
   try {
@@ -115,12 +118,13 @@ export const getMyPurchases = async (req, res) => {
 
     res.status(200).json(payments);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener las compras', error: err.message });
   }
 };
 
 // Ver "Mis ventas"
-export const getMySales = async (req, res) => {
+export const getMySales = async (req, res, next) => {
   const userId = req.user.id;
 
   try {
@@ -132,13 +136,14 @@ export const getMySales = async (req, res) => {
 
     res.status(200).json(sales);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener las ventas', error: err.message });
   }
 };
 
 
 // Confirmación del pago
-export const confirmPayment = async (req, res) => {
+export const confirmPayment = async (req, res, next) => {
   const { paymentId, transactionId, paymentStatus } = req.body;
   try {
     const payment = await Payment.findById(paymentId);
@@ -179,6 +184,7 @@ export const confirmPayment = async (req, res) => {
 
     res.status(200).json({ message: 'Pago confirmado y procesado correctamente' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al confirmar el pago', error: err.message });
   }
 };

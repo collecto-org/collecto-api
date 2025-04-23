@@ -1,7 +1,7 @@
 import Brand from '../models/brand.js';
 
 // Ver las marcas disponibles
-export const getAllBrands = async (req, res) => {
+export const getAllBrands = async (req, res, next) => {
   try {
     const brands = await Brand.find();
 
@@ -11,12 +11,13 @@ export const getAllBrands = async (req, res) => {
 
     res.status(200).json(brands);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener las marcas', error: err.message });
   }
 };
 
 // Crear una nueva marca (solo admin)
-export const createBrand = async (req, res) => {
+export const createBrand = async (req, res, next) => {
   try {
     const { name, logoUrl, slug } = req.body;
 
@@ -30,12 +31,13 @@ export const createBrand = async (req, res) => {
 
     res.status(201).json(brand);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear la marca', error: err.message });
   }
 };
 
 // Actualizar marca (solo admin)
-export const updateBrand = async (req, res) => {
+export const updateBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, logoUrl, slug } = req.body;
@@ -48,12 +50,13 @@ export const updateBrand = async (req, res) => {
 
     res.status(200).json(updatedBrand);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar la marca', error: err.message });
   }
 };
 
 // Eliminar marca (solo admin)
-export const deleteBrand = async (req, res) => {
+export const deleteBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -64,6 +67,7 @@ export const deleteBrand = async (req, res) => {
 
     res.status(200).json({ message: 'Marca eliminada.' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar la marca', error: err.message });
   }
 };

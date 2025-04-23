@@ -1,7 +1,7 @@
 import Universe from '../models/universe.js';
 
 // Ver los universos disponibles
-export const getAllUniverses = async (req, res) => {
+export const getAllUniverses = async (req, res, next) => {
   try {
     const universes = await Universe.find();
 
@@ -11,12 +11,13 @@ export const getAllUniverses = async (req, res) => {
 
     res.status(200).json(universes);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los universos', error: err.message });
   }
 };
 
 // Crear un nuevo universo (solo admin)
-export const createUniverse = async (req, res) => {
+export const createUniverse = async (req, res, next) => {
   try {
     const { name, logoUrl, slug } = req.body;
 
@@ -30,12 +31,13 @@ export const createUniverse = async (req, res) => {
 
     res.status(201).json(universe);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear el universo', error: err.message });
   }
 };
 
 // Editar un nuevo universo (solo admin)
-export const updateUniverse = async (req, res) => {
+export const updateUniverse = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, logoUrl, slug } = req.body;
@@ -52,12 +54,13 @@ export const updateUniverse = async (req, res) => {
 
     res.status(200).json(updated);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el universo', error: err.message });
   }
 };
 
 // Eliminar un nuevo universo (solo admin)
-export const deleteUniverse = async (req, res) => {
+export const deleteUniverse = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -68,6 +71,7 @@ export const deleteUniverse = async (req, res) => {
 
     res.status(200).json({ message: 'Universo eliminado.' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar el universo', error: err.message });
   }
 };

@@ -2,7 +2,7 @@ import NotificationType from '../models/notificationTypes.js';
 import { createNotificationMessage } from '../utils/notificationUtils.js';
 
 // Ver los tipos de notificación disponibles
-export const getAllNotificationTypes = async (req, res) => {
+export const getAllNotificationTypes = async (req, res, next) => {
   try {
     const notificationTypes = await NotificationType.find();
 
@@ -12,12 +12,13 @@ export const getAllNotificationTypes = async (req, res) => {
 
     res.status(200).json(notificationTypes);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los tipos de notificación', error: err.message });
   }
 };
 
 // Crear nuevo tipo de notificación (solo admin)
-export const createNotificationType = async (req, res) => {
+export const createNotificationType = async (req, res, next) => {
   try {
     const { code, label, template, icon, order } = req.body;
 
@@ -31,12 +32,13 @@ export const createNotificationType = async (req, res) => {
 
     res.status(201).json(newNotificationType);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear el tipo de notificación', error: err.message });
   }
 };
 
 // Actualizar tipo de notificación (solo admin)
-export const updateNotificationType = async (req, res) => {
+export const updateNotificationType = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { code, label, template, icon, order } = req.body;
@@ -53,12 +55,13 @@ export const updateNotificationType = async (req, res) => {
 
     res.status(200).json(updatedNotificationType);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el tipo de notificación', error: err.message });
   }
 };
 
 // Eliminar tipo de notificación (solo admin)
-export const deleteNotificationType = async (req, res) => {
+export const deleteNotificationType = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -69,6 +72,7 @@ export const deleteNotificationType = async (req, res) => {
 
     res.status(200).json({ message: 'Tipo de notificación eliminado.' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar el tipo de notificación', error: err.message });
   }
 };

@@ -4,7 +4,7 @@ import Status from '../models/status.js';
 import ShippingMethod from '../models/shippingMethod.js';
 
 // Crear una nueva orden
-export const createOrder = async (req, res) => {
+export const createOrder = async (req, res, next) => {
   const { advertId, shippingMethodId, shippingAddress } = req.body;
   const buyerId = req.user.id;
   try {
@@ -40,12 +40,13 @@ export const createOrder = async (req, res) => {
       order: newOrder,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear la orden', error: err.message });
   }
 };
 
 // Obtener detalles de una orden
-export const getOrderDetails = async (req, res) => {
+export const getOrderDetails = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -65,13 +66,14 @@ export const getOrderDetails = async (req, res) => {
       order,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los detalles de la orden', error: err.message });
   }
 };
 
 
 // Actualizar el estado de una orden
-export const updateOrderStatus = async (req, res) => {
+export const updateOrderStatus = async (req, res, next) => {
   const { id } = req.params;
   const { status } = req.body;
   const userId = req.user.id;
@@ -103,13 +105,14 @@ export const updateOrderStatus = async (req, res) => {
       order,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el estado de la orden', error: err.message });
   }
 };
 
 
 // Cancelar una orden
-export const cancelOrder = async (req, res) => {
+export const cancelOrder = async (req, res, next) => {
   const { id } = req.params;
   const userId = req.user.id;
 
@@ -144,15 +147,16 @@ export const cancelOrder = async (req, res) => {
       order,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al cancelar la orden', error: err.message });
   }
 };
 
 
 // Obtener todas las órdenes de un usuario autenticado
-export const getAllUserOrders = async (req, res) => {
+export const getAllUserOrders = async (req, res, next) => {
   const userId = req.user.id;
-  const { orderId, page = 1, limit = 10 } = req.query;
+  const { orderId, page = 1, limit = 12 } = req.query;
 
   try {
     let filter = { $or: [{ buyerId: userId }, { sellerId: userId }] };
@@ -180,6 +184,7 @@ export const getAllUserOrders = async (req, res) => {
       orders,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener las órdenes', error: err.message });
   }
 };

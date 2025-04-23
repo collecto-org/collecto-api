@@ -1,7 +1,7 @@
 import Condition from '../models/condition.js';
 
 // Ver las condiciones disponibles
-export const getAllConditions = async (req, res) => {
+export const getAllConditions = async (req, res, next) => {
   try {
     const conditions = await Condition.find();
 
@@ -11,12 +11,13 @@ export const getAllConditions = async (req, res) => {
 
     res.status(200).json(conditions);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener las condiciones', error: err.message });
   }
 };
 
 // Crear nueva condición (solo admin)
-export const createCondition = async (req, res) => {
+export const createCondition = async (req, res, next) => {
   try {
     const { value } = req.body;
 
@@ -30,12 +31,13 @@ export const createCondition = async (req, res) => {
 
     res.status(201).json(condition);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear la condición', error: err.message });
   }
 };
 
 // Actualizar condición (solo admin)
-export const updateCondition = async (req, res) => {
+export const updateCondition = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { value } = req.body;
@@ -48,12 +50,13 @@ export const updateCondition = async (req, res) => {
 
     res.status(200).json(updatedCondition);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar la condición', error: err.message });
   }
 };
 
 // Eliminar condición (solo admin)
-export const deleteCondition = async (req, res) => {
+export const deleteCondition = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -64,6 +67,7 @@ export const deleteCondition = async (req, res) => {
 
     res.status(200).json({ message: 'Condición eliminada.' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar la condición', error: err.message });
   }
 };

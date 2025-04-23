@@ -1,7 +1,7 @@
 import Status from '../models/status.js';
 
 // Ver los estados disponibles
-export const getAllStatuses = async (req, res) => {
+export const getAllStatuses = async (req, res, next) => {
   try {
     const statuses = await Status.find();
 
@@ -11,12 +11,13 @@ export const getAllStatuses = async (req, res) => {
 
     res.status(200).json(statuses);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los estados', error: err.message });
   }
 };
 
 // Crear nuevo estado (solo admin)
-export const createStatus = async (req, res) => {
+export const createStatus = async (req, res, next) => {
   try {
     const { value, description } = req.body;
 
@@ -30,12 +31,13 @@ export const createStatus = async (req, res) => {
 
     res.status(201).json(newStatus);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear el estado', error: err.message });
   }
 };
 
 // Actualizar estado (solo admin)
-export const updateStatus = async (req, res) => {
+export const updateStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { value, description } = req.body;
@@ -52,12 +54,13 @@ export const updateStatus = async (req, res) => {
 
     res.status(200).json(updatedStatus);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el estado', error: err.message });
   }
 };
 
 // Eliminar estado (solo admin)
-export const deleteStatus = async (req, res) => {
+export const deleteStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -68,6 +71,7 @@ export const deleteStatus = async (req, res) => {
 
     res.status(200).json({ message: 'Estado eliminado.' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar el estado', error: err.message });
   }
 };

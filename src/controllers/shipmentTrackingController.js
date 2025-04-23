@@ -3,7 +3,7 @@ import Order from '../models/order.js';
 import { getTrackingInfo } from '../services/correosService.js';  // función de servicio para consultar Correos
 
 // Crear o actualizar el seguimiento de un envío
-export const createOrUpdateShipmentTracking = async (req, res) => {
+export const createOrUpdateShipmentTracking = async (req, res, next) => {
   const {
     orderId,
     providerName,
@@ -57,12 +57,13 @@ export const createOrUpdateShipmentTracking = async (req, res) => {
       shipment,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el seguimiento de envío', error: err.message });
   }
 };
 
 // Obtener detalles del seguimiento de un envío
-export const getShipmentTracking = async (req, res) => {
+export const getShipmentTracking = async (req, res, next) => {
   const { orderId } = req.params;
 
   try {
@@ -89,6 +90,7 @@ export const getShipmentTracking = async (req, res) => {
       shipment,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener el seguimiento de envío', error: err.message });
   }
 };

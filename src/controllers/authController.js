@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 import { uploadAvatarToCloudinary } from '../utils/upload.js'; // Importar la función de subida
 
 // Sign up
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   const { 
     username, 
     email, 
@@ -119,6 +119,7 @@ export const register = async (req, res) => {
         });
       });
     } catch (err) {
+      next(err);
       res.status(500).json({ message: 'Error al registrar usuario', error: err.message });
     }
   }
@@ -126,7 +127,7 @@ export const register = async (req, res) => {
 
 
 // Verificacion del correo electronico
-export const verifyRegisterEmail = async (req, res) => {
+export const verifyRegisterEmail = async (req, res, next) => {
   const { token } = req.params;
 
   try {
@@ -148,6 +149,7 @@ export const verifyRegisterEmail = async (req, res) => {
     res.redirect('http://localhost:3000/email-verified-success');  // Cambia esta URL quede al final!!
 
   } catch (error) {
+    next(err);
     res.status(400).send('Token inválido o expirado');
   }
 };
@@ -155,7 +157,7 @@ export const verifyRegisterEmail = async (req, res) => {
 
 
 // Login (con opcion de recordar sesión)
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   const { username, password, rememberMe } = req.body;
 
   try {
@@ -204,6 +206,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error en el login', error: err.message });
   }
 };
@@ -211,7 +214,7 @@ export const login = async (req, res) => {
 
 
 // Logout
-export const logout = (req, res) => {
+export const logout = (req, res, next) => {
   try {
     res.clearCookie('token', {
       httpOnly: true,
@@ -221,6 +224,7 @@ export const logout = (req, res) => {
 
     res.status(200).json({ message: 'Sesión cerrada correctamente' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al cerrar sesión', error: err.message });
   }
 };
@@ -228,7 +232,7 @@ export const logout = (req, res) => {
 
 
 // Recuperación de contraseña
-export const recoverPassword = async (req, res) => {
+export const recoverPassword = async (req, res, next) => {
   const { email } = req.body;
 
   try {
@@ -266,6 +270,7 @@ export const recoverPassword = async (req, res) => {
       res.status(200).json({ message: 'Correo de recuperación enviado' });
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al recuperar contraseña', error: err.message });
   }
 };
@@ -273,7 +278,7 @@ export const recoverPassword = async (req, res) => {
 
 
 // Verificar el token que recuipera la contraseña
-export const verifyRecoverToken = async (req, res) => {
+export const verifyRecoverToken = async (req, res, next) => {
   const { token } = req.params;
 
   try {
@@ -281,6 +286,7 @@ export const verifyRecoverToken = async (req, res) => {
 
     res.status(200).json({ message: 'Token de recuperación válido', userId: decoded.id });
   } catch (err) {
+    next(err);
     res.status(400).json({ message: 'Token de recuperación inválido o expirado' });
   }
 };
@@ -288,7 +294,7 @@ export const verifyRecoverToken = async (req, res) => {
 
 
 // Restablecer contraseña
-export const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res, next) => {
   const { token } = req.params;
   const { newPassword } = req.body;
 
@@ -305,7 +311,6 @@ export const resetPassword = async (req, res) => {
     user.updatedAt = Date.now(); 
     await user.save();
   
-
 // Enviar correo de confirmación
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -329,6 +334,7 @@ export const resetPassword = async (req, res) => {
   
   } catch (err) {
     console.log(err);
+    next(err);
     res.status(500).json({ message: 'Error al restablecer la contraseña', error: err.message });
   }  
 };

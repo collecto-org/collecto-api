@@ -6,7 +6,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
-export const getUserAdverts = async (req, res) => {
+export const getUserAdverts = async (req, res, next) => {
   const { username } = req.params;
 
   try {
@@ -49,6 +49,7 @@ export const getUserAdverts = async (req, res) => {
     });
 
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los anuncios del usuario', error: err.message });
   }
 };
@@ -57,7 +58,7 @@ export const getUserAdverts = async (req, res) => {
 
 
 // Obtener datos del propio usuario (de si mismo)
-export const getCurrentUser = async (req, res) => {
+export const getCurrentUser = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
@@ -80,13 +81,14 @@ export const getCurrentUser = async (req, res) => {
       bio: user.bio,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los datos del usuario', error: err.message });
   }
 };
 
 
 // Editar perfil del usuario
-export const editUserProfile = async (req, res) => {
+export const editUserProfile = async (req, res, next) => {
   const userId = req.user.id;
   const updatedData = req.body;
 
@@ -129,6 +131,7 @@ export const editUserProfile = async (req, res) => {
       user: updatedUser,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el perfil', error: err.message });
   }
 };
@@ -136,7 +139,7 @@ export const editUserProfile = async (req, res) => {
 
 
 // Eliminar el perfil del usuario
-export const deleteUserProfile = async (req, res) => {
+export const deleteUserProfile = async (req, res, next) => {
   const userId = req.user.id;
 
   try {
@@ -155,6 +158,7 @@ export const deleteUserProfile = async (req, res) => {
 
     res.status(200).json({ message: 'Cuenta eliminada' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar el perfil', error: err.message });
   }
 };
@@ -162,11 +166,22 @@ export const deleteUserProfile = async (req, res) => {
 
 
 // Ver anuncios de uno mismo
-export const getOwnAdverts = async (req, res) => {
+export const getOwnAdverts = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    const { page = 1, limit = 12 } = req.query;  // Paginación
 
-    const adverts = await Advert.find({ user: userId });
+    // Consulta para obtener los anuncios de un usuario con paginación
+    const adverts = await Advert.find({ user: userId })
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .populate('transaction')
+      .populate('status')
+      .populate('product_type')
+      .populate('universe')
+      .populate('condition')
+      .populate('brand');
+
     const totalAdverts = await Advert.countDocuments({ user: userId });
 
     if (!adverts.length) {
@@ -178,17 +193,30 @@ export const getOwnAdverts = async (req, res) => {
       adverts,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los anuncios', error: err.message });
   }
 };
 
 
 // Obtener "Mis anuncios favoritos" (favoritos del usuario autenticado)
-export const getUserFavorites = async (req, res) => {
+export const getUserFavorites = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    const { page = 1, limit = 12 } = req.query;
 
-    const user = await User.findById(userId).populate('favorites');
+    const user = await User.findById(userId)
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .populate('favorites')
+      .populate('favorites.transaction')
+      .populate('favorites.status')
+      .populate('favorites.product_type')
+      .populate('favorites.universe')
+      .populate('favorites.condition')
+      .populate('favorites.brand');
+      
+
     const totalFavorites = user.favorites.length;
 
     if (!user || totalFavorites === 0) {
@@ -200,13 +228,14 @@ export const getUserFavorites = async (req, res) => {
       adverts: user.favorites,  // Los anuncios favoritos
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener favoritos', error: err.message });
   }
 };
 
 
 // Agregar un anuncio a favoritos
-export const addFavorite = async (req, res) => {
+export const addFavorite = async (req, res, next) => {
   const userId = req.user.id;
   const { listingId } = req.params;
 
@@ -227,12 +256,13 @@ export const addFavorite = async (req, res) => {
 
     res.status(201).json({ message: 'Añadido a favoritos' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al agregar favorito', error: err.message });
   }
 };
 
 // Eliminar un anuncio de favoritos
-export const removeFavorite = async (req, res) => {
+export const removeFavorite = async (req, res, next) => {
   const userId = req.user.id;
   const { listingId } = req.params;
 
@@ -253,13 +283,14 @@ export const removeFavorite = async (req, res) => {
 
     res.status(200).json({ message: 'Eliminado de favoritos' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar favorito', error: err.message });
   }
 };
 
 
 // Obtener "Mis notificaciones"
-export const getUserNotifications = async (req, res) => {
+export const getUserNotifications = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
@@ -271,13 +302,14 @@ export const getUserNotifications = async (req, res) => {
 
     res.status(200).json(notifications);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener las notificaciones', error: err.message });
   }
 };
 
 
 // Marcar notificación como leída
-export const markNotificationAsRead = async (req, res) => {
+export const markNotificationAsRead = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const notificationId = req.params.id;
@@ -297,13 +329,14 @@ export const markNotificationAsRead = async (req, res) => {
 
     res.status(200).json({ message: 'Leída' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al marcar la notificación como leída', error: err.message });
   }
 };
 
 
 // Notificación de cambio de estado de favorito (vendido/reservado/disponible)
-export const notifyFavoriteStatusChange = async (req, res) => {
+export const notifyFavoriteStatusChange = async (req, res, next) => {
   const userId = req.user.id;
   const { advertId, status } = req.body;
 
@@ -345,6 +378,7 @@ export const notifyFavoriteStatusChange = async (req, res) => {
 
   } catch (err) {
     console.error(err);
+    next(err);
     res.status(500).json({ message: 'Error al crear la notificación de cambio de estado', error: err.message });
   }
 };
@@ -352,7 +386,7 @@ export const notifyFavoriteStatusChange = async (req, res) => {
 
 
 // Notificación cuando un artículo favorito cambia de precio
-export const notifyPriceChange = async (req, res) => {
+export const notifyPriceChange = async (req, res, next) => {
   const { advertId } = req.body;
   try {
     const advert = await Advert.findById(advertId);
@@ -383,13 +417,14 @@ export const notifyPriceChange = async (req, res) => {
 
     res.status(201).json({ message: 'Notificación de cambio de precio enviada' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear la notificación', error: err.message });
   }
 };
 
 
 // Notificación cuando un usuario elimina un favorito
-export const notifyFavoriteRemoved = async (req, res) => {
+export const notifyFavoriteRemoved = async (req, res, next) => {
   const { advertId } = req.body;
   try {
     const advert = await Advert.findById(advertId);
@@ -420,13 +455,14 @@ export const notifyFavoriteRemoved = async (req, res) => {
 
     res.status(201).json({ message: 'Notificación de eliminación de favorito enviada' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear la notificación', error: err.message });
   }
 };
 
 
 // Notificación de nuevo mensaje en el chat
-export const notifyNewChatMessage = async (req, res) => {
+export const notifyNewChatMessage = async (req, res, next) => {
   const { chatId } = req.body;
 
   try {
@@ -464,13 +500,14 @@ export const notifyNewChatMessage = async (req, res) => {
 
     res.status(201).json({ message: 'Notificación de nuevo mensaje enviada' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear la notificación', error: err.message });
   }
 };
 
 
 // Crear conversación por anuncio
-export const createChat = async (req, res) => {
+export const createChat = async (req, res, next) => {
   const { listingId } = req.params;
   const userId = req.user.id; 
 
@@ -497,6 +534,7 @@ export const createChat = async (req, res) => {
 
     res.status(201).json({ chatId: chat.id });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear la conversación', error: err.message });
   }
 };
@@ -504,7 +542,7 @@ export const createChat = async (req, res) => {
 
 
 // Enviar mensaje en un chat
-export const sendMessageToChat = async (req, res) => {
+export const sendMessageToChat = async (req, res, next) => {
   const { chatId } = req.params;
   const { content } = req.body;
   const senderId = req.user.id;
@@ -544,6 +582,7 @@ export const sendMessageToChat = async (req, res) => {
 
     res.status(201).json({ message: 'Mensaje enviado' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al enviar mensaje', error: err.message });
   }
 };
@@ -552,7 +591,7 @@ export const sendMessageToChat = async (req, res) => {
 
 
 // Obtener todas las conversaciones del usuario
-export const getUserChats = async (req, res) => {
+export const getUserChats = async (req, res, next) => {
   const userId = req.user.id;
 
   try {
@@ -581,6 +620,7 @@ export const getUserChats = async (req, res) => {
 
     res.status(200).json(chatPreviews);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener las conversaciones', error: err.message });
   }
 };
@@ -588,7 +628,7 @@ export const getUserChats = async (req, res) => {
 
 
 // Ver un chat en particular
-export const getChatMessages = async (req, res) => {
+export const getChatMessages = async (req, res, next) => {
   const userId = req.user.id;
   const { chatId } = req.params;
 
@@ -616,6 +656,7 @@ export const getChatMessages = async (req, res) => {
 
     res.status(200).json(messages);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los mensajes del chat', error: err.message });
   }
 };

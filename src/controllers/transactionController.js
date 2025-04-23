@@ -1,7 +1,7 @@
 import Transaction from '../models/transaction.js';
 
 // Ver las transacciones disponibles
-export const getAllTransactions = async (req, res) => {
+export const getAllTransactions = async (req, res, next) => {
   try {
     const transactions = await Transaction.find();
 
@@ -11,12 +11,13 @@ export const getAllTransactions = async (req, res) => {
 
     res.status(200).json(transactions);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener las transacciones', error: err.message });
   }
 };
 
 // Crear nueva transacción (solo admin)
-export const createTransaction = async (req, res) => {
+export const createTransaction = async (req, res, next) => {
   try {
     const { transaction, description, slug } = req.body;
 
@@ -30,12 +31,13 @@ export const createTransaction = async (req, res) => {
 
     res.status(201).json(newTransaction);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear la transacción', error: err.message });
   }
 };
 
 // Actualizar transacción (solo admin)
-export const updateTransaction = async (req, res) => {
+export const updateTransaction = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { transaction, description, slug } = req.body;
@@ -52,12 +54,13 @@ export const updateTransaction = async (req, res) => {
 
     res.status(200).json(updatedTransaction);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar la transacción', error: err.message });
   }
 };
 
 // Eliminar transacción (solo admin)
-export const deleteTransaction = async (req, res) => {
+export const deleteTransaction = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -68,6 +71,7 @@ export const deleteTransaction = async (req, res) => {
 
     res.status(200).json({ message: 'Transacción eliminada.' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar la transacción', error: err.message });
   }
 };

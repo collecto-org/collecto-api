@@ -1,7 +1,7 @@
 import ProductType from '../models/productType.js';
 
 //Ver los tipos de productos disponibles
-export const getAllProductTypes = async (req, res) => {
+export const getAllProductTypes = async (req, res, next) => {
   try {
     const productTypes = await ProductType.find();
 
@@ -11,12 +11,13 @@ export const getAllProductTypes = async (req, res) => {
 
     res.status(200).json(productTypes);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los tipos de productos', error: err.message });
   }
 };
 
 // Crear nuevo tipo de producto (solo admin)
-export const createProductType = async (req, res) => {
+export const createProductType = async (req, res, next) => {
   try {
     const { name, slug, description } = req.body;
 
@@ -30,12 +31,13 @@ export const createProductType = async (req, res) => {
 
     res.status(201).json(newProductType);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear el tipo de producto', error: err.message });
   }
 };
 
 // Actualizar tipo de producto (solo admin)
-export const updateProductType = async (req, res) => {
+export const updateProductType = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, slug, description } = req.body;
@@ -52,12 +54,13 @@ export const updateProductType = async (req, res) => {
 
     res.status(200).json(updatedProductType);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el tipo de producto', error: err.message });
   }
 };
 
 // Eliminar tipo de producto (solo admin)
-export const deleteProductType = async (req, res) => {
+export const deleteProductType = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -68,6 +71,7 @@ export const deleteProductType = async (req, res) => {
 
     res.status(200).json({ message: 'Tipo de producto eliminado.' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar el tipo de producto', error: err.message });
   }
 };

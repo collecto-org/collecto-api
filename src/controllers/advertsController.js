@@ -9,7 +9,7 @@ import cloudinary from '../config/cloudinaryConfig.js'
 
 export const getAllAdverts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, sortBy = 'createdAt' } = req.query;
+    const { page = 1, limit = 12, sortBy = 'createdAt' } = req.query;
 
     // Consulta para obtener anuncios
     const adverts = await Advert.find()
@@ -77,7 +77,7 @@ export const getAllAdverts = async (req, res, next) => {
 
 
 // Detalle de un anuncio
-export const getAdvertBySlug = async (req, res) => {
+export const getAdvertBySlug = async (req, res, next) => {
   const { slug } = req.params;
   try {
     const advert = await Advert.findOne({ slug })
@@ -111,6 +111,7 @@ export const getAdvertBySlug = async (req, res) => {
 
     res.status(200).json(advertWithImages);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener el anuncio', error: err.message });
   }
 };
@@ -118,7 +119,7 @@ export const getAdvertBySlug = async (req, res) => {
 
 
 // Filtro de anuncios
-export const searchAdverts = async (req, res) => {
+export const searchAdverts = async (req, res, next) => {
   try {
     const {
       title,
@@ -127,7 +128,7 @@ export const searchAdverts = async (req, res) => {
       tags,
       status,
       transaction,
-      collection,
+      collectionref,
       createdAtMin,
       createdAtMax,
       brand,
@@ -136,7 +137,7 @@ export const searchAdverts = async (req, res) => {
       condition,
       slug,
       page = 1,
-      limit = 10,
+      limit = 12,
       sortBy = 'createdAt',
       sortOrder = -1,
     } = req.query;
@@ -148,7 +149,7 @@ export const searchAdverts = async (req, res) => {
     if (tags) query.tags = { $in: tags.split(',') };
     if (status) query.status = status;
     if (transaction) query.transaction = transaction;
-    if (collection) query.collection = collection;
+    if (collectionref) query.collectionref = collectionref;
     if (brand) query.brand = brand;
     if (product_type) query.product_type = product_type;
     if (universe) query.universe = universe;
@@ -199,6 +200,7 @@ export const searchAdverts = async (req, res) => {
 
     res.status(200).json({ adverts: advertsWithoutFavStatus, total: totalAdverts });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al buscar anuncios', error: err.message });
   }
 };
@@ -223,7 +225,7 @@ export const searchAdverts = async (req, res) => {
 
 
 // Actualizar estado y visibilidad
-export const updateAdvertStatus = async (req, res) => {
+export const updateAdvertStatus = async (req, res, next) => {
   const { id } = req.params;
   const { status } = req.body;  // Estado
 
@@ -278,6 +280,7 @@ export const updateAdvertStatus = async (req, res) => {
 
   } catch (err) {
     console.error(err);
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el estado del anuncio', error: err.message });
   }
 };
@@ -285,7 +288,7 @@ export const updateAdvertStatus = async (req, res) => {
 
 
 // Subir imagen de un anuncio
-export const uploadImages = async (req, res) => {
+export const uploadImages = async (req, res, next) => {
   const advertId = req.params.id;
 
   if (!req.files || req.files.length === 0) {
@@ -310,13 +313,14 @@ export const uploadImages = async (req, res) => {
       images: imageUrls,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al subir las imágenes', error: err.message });
   }
 };
 
 
 // Ver todas las imágenes del un anuncio
-export const getImages = async (req, res) => {
+export const getImages = async (req, res, next) => {
   const advertId = req.params.id;
 
   try {
@@ -328,13 +332,14 @@ export const getImages = async (req, res) => {
 
     res.status(200).json({ images: advert.images });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener las imágenes', error: err.message });
   }
 };
 
 
 // Crear nuevo anuncio (Endpoint de Gestión de usuario)
-export const createAdvert = async (req, res) => {
+export const createAdvert = async (req, res, next) => {
   const {
     title,
     description,
@@ -344,7 +349,7 @@ export const createAdvert = async (req, res) => {
     product_type,
     universe,
     condition,
-    collection,
+    collectionref,
     brand,
     tags,
   } = req.body;
@@ -374,7 +379,7 @@ export const createAdvert = async (req, res) => {
       product_type,
       universe,
       condition,
-      collection,
+      collectionref,
       brand,
       tags,
       user: userId,
@@ -389,13 +394,14 @@ export const createAdvert = async (req, res) => {
       anuncio: newAdvert,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear el anuncio', error: err.message });
   }
 };
 
 
 // Editar un anuncio propio (Endpoint de Gestión de usuario)
-export const editAdvert = async (req, res) => {
+export const editAdvert = async (req, res, next) => {
   const { id } = req.params;
   const {
     title,
@@ -406,7 +412,7 @@ export const editAdvert = async (req, res) => {
     product_type,
     universe,
     condition,
-    collection,
+    collectionref,
     brand,
     tags,
     images,
@@ -451,7 +457,7 @@ export const editAdvert = async (req, res) => {
     advert.product_type = product_type || advert.product_type;
     advert.universe = universe || advert.universe;
     advert.condition = condition || advert.condition;
-    advert.collection = collection || advert.collection;
+    advert.collectionref = collectionref || advert.collectionref;
     advert.brand = brand || advert.brand;
     advert.tags = tags || advert.tags;
 
@@ -466,6 +472,7 @@ export const editAdvert = async (req, res) => {
       advert,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el anuncio', error: err.message });
   }
 };
@@ -473,7 +480,7 @@ export const editAdvert = async (req, res) => {
 
 
 // Borrar anuncio propio (Endpoint de Gestión de usuario)
-export const deleteAdvert = async (req, res) => {
+export const deleteAdvert = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -501,6 +508,7 @@ export const deleteAdvert = async (req, res) => {
     res.status(200).json({ message: 'Anuncio eliminado' });
   } catch (err) {
     console.error(err);
+    next(err);
     res.status(500).json({ message: 'Error al borrar el anuncio', error: err.message });
   }
 };

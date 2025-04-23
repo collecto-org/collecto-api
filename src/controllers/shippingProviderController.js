@@ -1,7 +1,7 @@
 import ShippingProvider from '../models/shippingProvider.js';
 
 // Ver los proveedores de envío disponibles
-export const getAllShippingProviders = async (req, res) => {
+export const getAllShippingProviders = async (req, res, next) => {
   try {
     const providers = await ShippingProvider.find({ active: true });
 
@@ -11,12 +11,13 @@ export const getAllShippingProviders = async (req, res) => {
 
     res.status(200).json(providers);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los proveedores de envío', error: err.message });
   }
 };
 
 // Crear nuevo proveedor de envío (solo admin)
-export const createShippingProvider = async (req, res) => {
+export const createShippingProvider = async (req, res, next) => {
   try {
     const { code, label, trackingUrl, apiIntegration } = req.body;
 
@@ -30,12 +31,13 @@ export const createShippingProvider = async (req, res) => {
 
     res.status(201).json(newProvider);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear el proveedor de envío', error: err.message });
   }
 };
 
 // Actualizar proveedor de envío (solo admin)
-export const updateShippingProvider = async (req, res) => {
+export const updateShippingProvider = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { code, label, trackingUrl, apiIntegration } = req.body;
@@ -52,12 +54,13 @@ export const updateShippingProvider = async (req, res) => {
 
     res.status(200).json(updatedProvider);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el proveedor de envío', error: err.message });
   }
 };
 
 // Eliminar proveedor de envío (solo admin)
-export const deleteShippingProvider = async (req, res) => {
+export const deleteShippingProvider = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -68,6 +71,7 @@ export const deleteShippingProvider = async (req, res) => {
 
     res.status(200).json({ message: 'Proveedor de envío eliminado.' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar el proveedor de envío', error: err.message });
   }
 };

@@ -1,7 +1,7 @@
 import ShippingMethod from '../models/shippingMethod.js';
 
 // Ver los métodos de envío disponibles
-export const getAllShippingMethods = async (req, res) => {
+export const getAllShippingMethods = async (req, res, next) => {
   try {
     const shippingMethods = await ShippingMethod.find({ active: true }).sort({ order: 1 });
 
@@ -11,12 +11,13 @@ export const getAllShippingMethods = async (req, res) => {
 
     res.status(200).json(shippingMethods);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los métodos de envío', error: err.message });
   }
 };
 
 // Crear nuevo método de envío (solo admin)
-export const createShippingMethod = async (req, res) => {
+export const createShippingMethod = async (req, res, next) => {
   try {
     const { code, label, order, active } = req.body;
 
@@ -30,12 +31,13 @@ export const createShippingMethod = async (req, res) => {
 
     res.status(201).json(newMethod);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al crear el método de envío', error: err.message });
   }
 };
 
 // Actualizar método de envío (solo admin)
-export const updateShippingMethod = async (req, res) => {
+export const updateShippingMethod = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { code, label, order, active } = req.body;
@@ -52,12 +54,13 @@ export const updateShippingMethod = async (req, res) => {
 
     res.status(200).json(updatedMethod);
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el método de envío', error: err.message });
   }
 };
 
 // Eliminar método de envío (solo admin)
-export const deleteShippingMethod = async (req, res) => {
+export const deleteShippingMethod = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -68,6 +71,7 @@ export const deleteShippingMethod = async (req, res) => {
 
     res.status(200).json({ message: 'Método de envío eliminado.' });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al eliminar el método de envío', error: err.message });
   }
 };

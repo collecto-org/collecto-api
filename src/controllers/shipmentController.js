@@ -3,7 +3,7 @@ import Order from '../models/order.js';
 import ShippingProvider from '../models/shippingProvider.js';
 
 // Crear un nuevo envío
-export const createShipment = async (req, res) => {
+export const createShipment = async (req, res, next) => {
   const { orderId, shippingProviderId, trackingCode, estimatedDate } = req.body;
   const userId = req.user.id;
 
@@ -40,13 +40,14 @@ export const createShipment = async (req, res) => {
       shipment: newShipment,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al iniciar el envío', error: err.message });
   }
 };
 
 
 // Obtener detalles del envío
-export const getShipmentDetails = async (req, res) => {
+export const getShipmentDetails = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -62,13 +63,14 @@ export const getShipmentDetails = async (req, res) => {
       shipment,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener los detalles del envío', error: err.message });
   }
 };
 
 
 // Actualizar estado del envío
-export const updateShipmentStatus = async (req, res) => {
+export const updateShipmentStatus = async (req, res, next) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -100,34 +102,30 @@ export const updateShipmentStatus = async (req, res) => {
       shipment,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el estado del envío', error: err.message });
   }
 };
 
 
 
-// Agregar actualización al historial de envío
-export const addToShipmentHistory = async (req, res) => {
+export const addToShipmentHistory = async (req, res, next) => {
   const { shipmentId, status, details } = req.body;
 
   try {
-    // Buscar el envío
     const shipment = await Shipment.findById(shipmentId);
     if (!shipment) {
       return res.status(404).json({ message: 'Envío no encontrado' });
     }
 
-    // Crear nueva entrada de historial
     const newHistoryEntry = {
       status,
-      date: new Date(),  // Se usa la fecha actual para la actualización
+      date: new Date(), 
       details,
     };
 
-    // Agregar la nueva entrada al historial
     shipment.history.push(newHistoryEntry);
     
-    // Guardar el envío actualizado
     await shipment.save();
 
     res.status(201).json({
@@ -135,13 +133,14 @@ export const addToShipmentHistory = async (req, res) => {
       shipment,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al actualizar el historial', error: err.message });
   }
 };
 
 
 // Obtener historial de actualizaciones del envío
-export const getShipmentHistory = async (req, res) => {
+export const getShipmentHistory = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -154,6 +153,7 @@ export const getShipmentHistory = async (req, res) => {
       history: shipment.history,
     });
   } catch (err) {
+    next(err);
     res.status(500).json({ message: 'Error al obtener el historial del envío', error: err.message });
   }
 };
