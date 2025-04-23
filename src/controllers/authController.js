@@ -2,8 +2,7 @@ import bcrypt from 'bcrypt';
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import { uploadAvatarToCloudinary } from '../utils/upload.js'; // Importar la función de subida
-
+import { uploadAvatarToCloudinary } from '../utils/upload.js';
 // Sign up
 export const register = async (req, res, next) => {
   const { 
@@ -80,7 +79,7 @@ export const register = async (req, res, next) => {
         subject: 'Verificación de cuenta',
         html: `
           <p>Gracias por registrarte. Por favor, haz clic en el siguiente enlace para verificar tu correo electrónico:</p> 
-          <a href="http://localhost:3000/verify-email/${emailVerificationToken}">Verificar mi correo electrónico</a>
+          <a href="${process.env.FRONTEND_URL}/verify-email/${emailVerificationToken}">Verificar mi correo electrónico</a>
         `,
       };
 
@@ -146,7 +145,8 @@ export const verifyRegisterEmail = async (req, res, next) => {
     await user.save();
 
     // Redirige al frontend a una página de éxito
-    res.redirect('http://localhost:3000/email-verified-success');  // Cambia esta URL quede al final!!
+    const frontendUrl = process.env.FRONTEND_URL;
+res.redirect(`${frontendUrl}/email-verified-success`);
 
   } catch (error) {
     next(err);
@@ -260,7 +260,7 @@ export const recoverPassword = async (req, res, next) => {
       from: process.env.EMAIL_USER,
       to: user.email,
       subject: 'Recuperación de contraseña',
-      text: `Haga clic en el siguiente enlace para restablecer su contraseña: http://localhost:3000/api/auth/reset/${resetToken}`,
+      text: `Haga clic en el siguiente enlace para restablecer su contraseña: http://localhost:5173/api/auth/reset/${resetToken}`,
     };    
 
     transporter.sendMail(mailOptions, (err, info) => {

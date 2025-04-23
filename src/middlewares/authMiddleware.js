@@ -38,11 +38,10 @@ function loadUserIfAuthenticated(req, res, next) {
         role: decoded.role,
       };
     } catch (error) {
-      // Si el token es inválido (o ha expirado), no se asigna el req.user
       console.error('Token inválido o expirado:', error.message);
+      return res.status(401).json({ error: 'Token inválido o expirado. Por favor, vuelve a iniciar sesión.' });
     }
   }
-
   next();
 }
 
