@@ -118,9 +118,22 @@ export const getAdvertBySlug = async (req, res, next) => {
 
 
 // Filtro de anuncios
+// Añado el parametro query para buscar palabras sueltas en el buscador.
+// Cuando este endpoint se usa para filtrar anuncios, no se le pasa el parametro
+// query pero si los demás (titulo, precios catalogos, etc).
+// Cuando este endpoint se usa para busqueda global, solo utilizará el campo query.
+// En busqueda global se pueden introducir más de una palabra.
+// Si hay más de una, por ejemplo "Pikachu feliz", buscará "Pikachu feliz", "Pikachu"
+// y "Feliz", aunque se le dará prioridad a mostrar primero los resultados que 
+// coinciden con el nombre completo "Pikachu feliz".
+// Nota extra: la frase completa solo la busca en titulos y descripciones. Pero las
+// palabra sueltas las busca tambien en tags, tipò de producto, marca universo y condicionm.
+// Revisar si son esos los que queremos o si de quieren más o menos.
+
 export const searchAdverts = async (req, res, next) => {
   try {
     const {
+      searchTerm,  // Busqueda general de palabras o frases
       title,
       priceMin,
       priceMax,
@@ -141,28 +154,110 @@ export const searchAdverts = async (req, res, next) => {
       sortOrder = -1,
     } = req.query;
 
-    const query = {};
+    const queryFilter = {};
 
-    if (title) query.title = { $regex: title, $options: 'i' };
-    if (priceMin || priceMax) query.price = { $gte: Number(priceMin), $lte: Number(priceMax) };
-    if (tags) query.tags = { $in: tags.split(',') };
-    if (status) query.status = status;
-    if (transaction) query.transaction = transaction;
-    if (collectionref) query.collectionref = collectionref;
-    if (brand) query.brand = brand;
-    if (product_type) query.product_type = product_type;
-    if (universe) query.universe = universe;
-    if (condition) query.condition = condition;
-    if (createdAtMin || createdAtMax) {
-      query.createdAt = {};
-      if (createdAtMin) query.createdAt.$gte = new Date(createdAtMin);
-      if (createdAtMax) query.createdAt.$lte = new Date(createdAtMax);
+    //INICIO DE LA LOGICA PARA BUSCAR EN EL BUSCADOR
+
+    let advertsWithPriority = [];  // Anuncios con prioridad (frase exacta)
+    let advertsWithoutPriority = [];  // Anuncios sin prioridad (palabras sueltas)
+
+    if (searchTerm) {
+      const keywords = searchTerm.split(' ');
+
+      // Primero, buscar la frase completa (todas las palabras juntas)
+      const fullQuery = searchTerm.trim();
+      queryFilter.$or = [
+        { title: { $regex: fullQuery, $options: 'i' } },
+        { description: { $regex: fullQuery, $options: 'i' } }, 
+      ]; //ojo, la frase completa solo la busca en titulos o en descripciones
+
+      // Buscar por cada palabra por separado
+      keywords.forEach(keyword => {
+        queryFilter.$or.push(
+          { title: { $regex: keyword, $options: 'i' } },
+          { description: { $regex: keyword, $options: 'i' } },
+          { tags: { $in: [keyword] } },
+          { 'product_type.name': { $regex: keyword, $options: 'i' } },
+          { 'brand.name': { $regex: keyword, $options: 'i' } },
+          { 'universe.name': { $regex: keyword, $options: 'i' } },
+          { 'condition.name': { $regex: keyword, $options: 'i' } },
+        ); // ojo las palabras sueltas las busca en título, descripciones, tags, tipò de producto, marca universo y condicionm.
+      });
+
+      // Realizar la consulta
+      const totalAdverts = await Advert.countDocuments(queryFilter);
+      let adverts = await Advert.find(queryFilter)
+        .skip((page - 1) * limit)
+        .limit(Number(limit))
+        .sort({ [sortBy]: sortOrder })
+        .populate('transaction')
+        .populate('status')
+        .populate('product_type')
+        .populate('universe')
+        .populate('condition')
+        .populate('brand')
+        .populate('user');
+
+      if (!adverts.length) {
+        return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total: totalAdverts });
+      }
+
+      // Diferencia los anuncios que coinciden con la frase completa y aquellos que no
+      adverts.forEach(advert => {
+        if (advert.title.toLowerCase().includes(fullQuery.toLowerCase()) || advert.description.toLowerCase().includes(fullQuery.toLowerCase())) {
+          advertsWithPriority.push(advert);
+        } else {
+          advertsWithoutPriority.push(advert);
+        }
+      });
+
+      // Primero regresamos los anuncios de con la frase completa y luego las palabra ssueltas
+      const advertsSorted = [...advertsWithPriority, ...advertsWithoutPriority];
+
+      if (req.user) {
+        const userId = req.user.id;
+        const user = await User.findById(userId);
+        const favorites = user.favorites.map(id => id.toString());
+
+        const advertsWithFavStatus = advertsSorted.map(advert => ({
+          ...advert.toObject(),
+          images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+          isFavorite: favorites.includes(advert._id.toString()),
+        }));
+
+        return res.status(200).json({ adverts: advertsWithFavStatus, total: totalAdverts });
+      }
+
+      const advertsWithoutFavStatus = advertsSorted.map(advert => ({
+        ...advert.toObject(),
+        images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+      }));
+
+      // Logica original de SearchAdvert
+      return res.status(200).json({ adverts: advertsWithoutFavStatus, total: totalAdverts });
+    } else {
+      // Si no hay parámetro 'searchTerm', se aplican los filtros estructurados como siempre
+      if (title) queryFilter.title = { $regex: title, $options: 'i' };
+      if (priceMin || priceMax) queryFilter.price = { $gte: Number(priceMin), $lte: Number(priceMax) };
+      if (tags) queryFilter.tags = { $in: tags.split(',') };
+      if (status) queryFilter.status = status;
+      if (transaction) queryFilter.transaction = transaction;
+      if (collectionref) queryFilter.collectionref = collectionref;
+      if (brand) queryFilter.brand = brand;
+      if (product_type) queryFilter.product_type = product_type;
+      if (universe) queryFilter.universe = universe;
+      if (condition) queryFilter.condition = condition;
+      if (createdAtMin || createdAtMax) {
+        queryFilter.createdAt = {};
+        if (createdAtMin) queryFilter.createdAt.$gte = new Date(createdAtMin);
+        if (createdAtMax) queryFilter.createdAt.$lte = new Date(createdAtMax);
+      }
+      if (slug) queryFilter.slug = { $regex: slug, $options: 'i' };
     }
-    if (slug) query.slug = { $regex: slug, $options: 'i' };
 
-    const totalAdverts = await Advert.countDocuments(query);
+    const totalAdverts = await Advert.countDocuments(queryFilter);
 
-    const adverts = await Advert.find(query)
+    const adverts = await Advert.find(queryFilter)
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .sort({ [sortBy]: sortOrder })
