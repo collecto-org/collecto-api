@@ -48,12 +48,12 @@ router.post('/me/favorites/:listingId', verifyToken, loadUserIfAuthenticated, ad
 router.delete('/me/favorites/:listingId', verifyToken, loadUserIfAuthenticated, removeFavorite); // Eliminar un anuncio de favoritos
 
 // Notificaciones
-router.get('/me/notifications', verifyToken, loadUserIfAuthenticated, getUserNotifications); // Obtener "Mis notificaciones"
-router.patch('/me/notifications/:id/read', verifyToken, loadUserIfAuthenticated, markNotificationAsRead); // Marcar notificación como leída
-router.post('/me/notifications/favorite-status-change', verifyToken, loadUserIfAuthenticated, notifyFavoriteStatusChange);  // Notificación de cambio de estado (vendido/reservado/disponible)
-router.post('/me/notifications/favorite-price-change', verifyToken, loadUserIfAuthenticated, notifyPriceChange);  // Notificación de cambio de precio
-router.post('/me/notifications/favorite-removed', verifyToken, loadUserIfAuthenticated, notifyFavoriteRemoved); // Notificación de eliminación de favorito
-router.post('/me/notifications/new-chat-message', verifyToken, loadUserIfAuthenticated, notifyNewChatMessage); // Notificación por nuevos mensajes de chat
+//router.get('/me/notifications', verifyToken, loadUserIfAuthenticated, getUserNotifications); // Obtener "Mis notificaciones"
+//router.patch('/me/notifications/:id/read', verifyToken, loadUserIfAuthenticated, markNotificationAsRead); // Marcar notificación como leída
+//router.post('/me/notifications/favorite-status-change', verifyToken, loadUserIfAuthenticated, notifyFavoriteStatusChange);  // Notificación de cambio de estado (vendido/reservado/disponible)
+//router.post('/me/notifications/favorite-price-change', verifyToken, loadUserIfAuthenticated, notifyPriceChange);  // Notificación de cambio de precio
+//router.post('/me/notifications/favorite-removed', verifyToken, loadUserIfAuthenticated, notifyFavoriteRemoved); // Notificación de eliminación de favorito
+//router.post('/me/notifications/new-chat-message', verifyToken, loadUserIfAuthenticated, notifyNewChatMessage); // Notificación por nuevos mensajes de chat
 
 // Chats
 router.post('/me/chat/:listingId', verifyToken, loadUserIfAuthenticated, createChat);  // Crear chat relacionado por un anuncio

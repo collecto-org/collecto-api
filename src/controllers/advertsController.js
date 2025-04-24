@@ -5,6 +5,7 @@ import Status from '../models/status.js';
 import User from '../models/user.js';
 //import { v2 as cloudinary } from 'cloudinary';
 import cloudinary from '../config/cloudinaryConfig.js'
+import { notifyStatusChange, notifyPriceChange, notifyAdvertDeleted  } from './notificationController.js'; ////////////////////////////////////////////////////////////
 
 
 export const getAllAdverts = async (req, res, next) => {
@@ -75,7 +76,6 @@ export const getAllAdverts = async (req, res, next) => {
 };
 
 
-
 // Detalle de un anuncio
 export const getAdvertBySlug = async (req, res, next) => {
   const { slug } = req.params;
@@ -115,7 +115,6 @@ export const getAdvertBySlug = async (req, res, next) => {
     res.status(500).json({ message: 'Error al obtener el anuncio', error: err.message });
   }
 };
-
 
 
 // Filtro de anuncios
@@ -206,75 +205,33 @@ export const searchAdverts = async (req, res, next) => {
 };
 
 
-
-// MARCADO PARA BORRAR
-
-// Estado del anuncio (por slug)
-//export const getAdvertStatusBySlug = async (req, res) => {
-//  const { slug } = req.params;
-//  try {
-//    const advert = await Advert.findOne({ slug }).select('status');
-//    if (!advert) {
-//      return res.status(404).json({ message: 'Anuncio no encontrado' });
-//    }
-//    res.status(200).json({ estado: advert.status });
-//  } catch (err) {
-//    res.status(500).json({ message: 'Error al obtener el estado del anuncio', error: err.message });
-//  }
-//};
-
-
-// Actualizar estado y visibilidad
+// Actualizar estado y visibilidad //////////////////////////////////////////////////////////////////////////////////////////////////////
 export const updateAdvertStatus = async (req, res, next) => {
   const { id } = req.params;
-  const { status } = req.body;  // Estado
+  const { status } = req.body;
 
   try {
     const statusObj = await Status.findOne({ code: status });
-
     if (!statusObj) {
       return res.status(400).json({ message: 'Estado no válido' });
     }
 
-    // Busca el anuncio por ID
     const advert = await Advert.findById(id);
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
 
     advert.status = statusObj._id;
-    
-    // Cambiar visibilidad
-    if (status === 'vendido') {
-      advert.isVisible = false;
-    } else if (status === 'disponible' || status === 'reservado') {
-      advert.isVisible = true; 
-    }
+
+    advert.isVisible = (status === 'vendido') ? false : true;
 
     await advert.save();
 
-    const notificationType = await NotificationType.findOne({ code: status }); // Obtener tipo de notificación
-
-    const message = `El anuncio "${advert.title}" ha cambiado su estado a ${status}.`;
-
-    // Notificar a los usuarios si el anuncio está en favoritos
-    const usersWithFavorite = await User.find({ 'favorites': advert._id });
-
-    if (usersWithFavorite.length > 0) {
-      usersWithFavorite.forEach(async (user) => {
-        const newNotification = new Notification({
-          user: user._id,
-          notificationType: notificationType._id,
-          advertId: advert._id,
-          message,
-          isRead: false,
-        });
-        await newNotification.save();
-      });
-    }
+    // Notificar a los usuarios que lo tenían en favoritos                 ////////////////////////////////////////
+    await notifyStatusChange(advert._id, status);
 
     res.status(200).json({
-      message: `El estado del anuncio ha sido cambiado a ${advert.status} y su visibilidad ha sido actualizada.`,
+      message: `Estado actualizado a ${status} y visibilidad ajustada.`,
       advert,
     });
 
@@ -284,7 +241,6 @@ export const updateAdvertStatus = async (req, res, next) => {
     res.status(500).json({ message: 'Error al actualizar el estado del anuncio', error: err.message });
   }
 };
-
 
 
 // Subir imagen de un anuncio
@@ -400,7 +356,7 @@ export const createAdvert = async (req, res, next) => {
 };
 
 
-// Editar un anuncio propio (Endpoint de Gestión de usuario)
+// Editar un anuncio propio (Endpoint de Gestión de usuario)  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const editAdvert = async (req, res, next) => {
   const { id } = req.params;
   const {
@@ -460,12 +416,15 @@ export const editAdvert = async (req, res, next) => {
     advert.collectionref = collectionref || advert.collectionref;
     advert.brand = brand || advert.brand;
     advert.tags = tags || advert.tags;
-
     advert.images = newImages.length > 0 ? [...advert.images, ...newImages] : advert.images;
-
     advert.updatedAt = Date.now();
 
     await advert.save();
+
+    // Notificar a los usuarios que lo tenían en favoritos
+    if (price && price !== oldPrice) {                                      //////////////////////////////////
+      await notifyPriceChange(advert);                                      /////////////////////////////////////// 
+    }                                                                       ///////////////////////////////////////
 
     res.status(200).json({
       message: 'Anuncio actualizado',
@@ -479,16 +438,18 @@ export const editAdvert = async (req, res, next) => {
 
 
 
-// Borrar anuncio propio (Endpoint de Gestión de usuario)
+// Borrar anuncio propio (Endpoint de Gestión de usuario) ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const deleteAdvert = async (req, res, next) => {
   const { id } = req.params;
 
   try {
     const advert = await Advert.findById(id);
-
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
+
+    // Notificar a los usuarios que lo tenían en favoritos
+    await notifyAdvertDeleted(advert);
 
     if (advert.images && advert.images.length > 0) {
       advert.images.forEach(imageUrl => {
@@ -502,7 +463,12 @@ export const deleteAdvert = async (req, res, next) => {
       });
     }
 
-    // Eliminar el anuncio de la base de datos
+    //  Eliminar el anuncio de los favoritos de los usuarios
+    await User.updateMany(                        ////////////////////////////////////////////
+      { favorites: id },                          /////////////////////////////////////////
+      { $pull: { favorites: id } }                ///////////////////////////////////////
+    );
+
     await Advert.findByIdAndDelete(id);
 
     res.status(200).json({ message: 'Anuncio eliminado' });

@@ -3,6 +3,7 @@ import User from '../models/user.js';
 import Notification from '../models/notification.js';
 import Chat from '../models/chat.js';
 import { v2 as cloudinary } from 'cloudinary';
+import { notifyNewMessage } from './notificationsController.js';
 
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
@@ -290,220 +291,220 @@ export const removeFavorite = async (req, res, next) => {
 
 
 // Obtener "Mis notificaciones"
-export const getUserNotifications = async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-
-    const notifications = await Notification.find({ user: userId }).populate('advertId', 'title');
-
-    if (!notifications.length) {
-      return res.status(404).json({ message: 'No tienes notificaciones.' });
-    }
-
-    res.status(200).json(notifications);
-  } catch (err) {
-    next(err);
-    res.status(500).json({ message: 'Error al obtener las notificaciones', error: err.message });
-  }
-};
+///export const getUserNotifications = async (req, res, next) => {
+///  try {
+///    const userId = req.user.id;
+//
+ //   const notifications = await Notification.find({ user: userId }).populate('advertId', 'title');
+//
+//    if (!notifications.length) {
+//      return res.status(404).json({ message: 'No tienes notificaciones.' });
+//    }
+//
+//    res.status(200).json(notifications);
+//  } catch (err) {
+//    next(err);
+//    res.status(500).json({ message: 'Error al obtener las notificaciones', error: err.message });
+//  }
+//};
 
 
 // Marcar notificación como leída
-export const markNotificationAsRead = async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    const notificationId = req.params.id;
-
-    const notification = await Notification.findById(notificationId);
-
-    if (!notification) {
-      return res.status(404).json({ message: 'Notificación no encontrada' });
-    }
-
-    if (!notification.user.equals(userId)) {
-      return res.status(403).json({ message: 'No tienes permiso para modificar esta notificación' });
-    }
-
-    notification.isRead = true;
-    await notification.save();
-
-    res.status(200).json({ message: 'Leída' });
-  } catch (err) {
-    next(err);
-    res.status(500).json({ message: 'Error al marcar la notificación como leída', error: err.message });
-  }
-};
+//export const markNotificationAsRead = async (req, res, next) => {
+//  try {
+//    const userId = req.user.id;
+//    const notificationId = req.params.id;
+//
+//    const notification = await Notification.findById(notificationId);
+//
+//    if (!notification) {
+//      return res.status(404).json({ message: 'Notificación no encontrada' });
+ //   }
+//
+//    if (!notification.user.equals(userId)) {
+//      return res.status(403).json({ message: 'No tienes permiso para modificar esta notificación' });
+//    }
+//
+//    notification.isRead = true;
+//    await notification.save();
+//
+//    res.status(200).json({ message: 'Leída' });
+//  } catch (err) {
+//    next(err);
+//    res.status(500).json({ message: 'Error al marcar la notificación como leída', error: err.message });
+//  }
+//};
 
 
 // Notificación de cambio de estado de favorito (vendido/reservado/disponible)
-export const notifyFavoriteStatusChange = async (req, res, next) => {
-  const userId = req.user.id;
-  const { advertId, status } = req.body;
+//export const notifyFavoriteStatusChange = async (req, res, next) => {
+//  const userId = req.user.id;
+//  const { advertId, status } = req.body;
+//
+ // try {
+ //   if (!['sold', 'reserved', 'available'].includes(status)) {
+//      return res.status(400).json({ message: 'Estado inválido. Debe ser "sold", "reserved" o "available".' });
+//    }
+//
+//    const advert = await Advert.findById(advertId);
+//    if (!advert) {
+//      return res.status(404).json({ message: 'Anuncio no encontrado' });
+//    }
+//
+//    // Verificar que el anuncio está en favoritos
+//    const user = await User.findById(userId);
+//    if (!user || !user.favorites.includes(advertId)) {
+ //     return res.status(400).json({ message: 'El anuncio no está en tus favoritos' });
+//    }
 
-  try {
-    if (!['sold', 'reserved', 'available'].includes(status)) {
-      return res.status(400).json({ message: 'Estado inválido. Debe ser "sold", "reserved" o "available".' });
-    }
-
-    const advert = await Advert.findById(advertId);
-    if (!advert) {
-      return res.status(404).json({ message: 'Anuncio no encontrado' });
-    }
-
-    // Verificar que el anuncio está en favoritos
-    const user = await User.findById(userId);
-    if (!user || !user.favorites.includes(advertId)) {
-      return res.status(400).json({ message: 'El anuncio no está en tus favoritos' });
-    }
-
-    // Crear el mensaje dependiendo del estado
-    const notificationType = await NotificationType.findOne({ code: 'favorite-status-change' });
-
-    const message = `El artículo "${advert.title}" ha sido marcado como ${status}.`;
-    
-
-    // Crear la notificación
-    const newNotification = new Notification({
-      user: userId,
-      notificationType: 'favorite-status-change',
-      advertId: advert._id,
-      message,
-      isRead: false,
-      createdAt: new Date(),
-    });
-
-    await newNotification.save();
-
-    res.status(201).json({ message: 'Notificación de cambio de estado de favorito creada', notification: newNotification });
-
-  } catch (err) {
-    console.error(err);
-    next(err);
-    res.status(500).json({ message: 'Error al crear la notificación de cambio de estado', error: err.message });
-  }
-};
+//    // Crear el mensaje dependiendo del estado
+//    const notificationType = await NotificationType.findOne({ code: 'favorite-status-change' });
+//
+//    const message = `El artículo "${advert.title}" ha sido marcado como ${status}.`;
+//    
+//
+//    // Crear la notificación
+//    const newNotification = new Notification({
+//      user: userId,
+//      notificationType: 'favorite-status-change',
+//      advertId: advert._id,
+//      message,
+//      isRead: false,
+//      createdAt: new Date(),
+//   });
+//
+//    await newNotification.save();
+//
+//    res.status(201).json({ message: 'Notificación de cambio de estado de favorito creada', notification: newNotification });
+//
+//  } catch (err) {
+//    console.error(err);
+//    next(err);
+//    res.status(500).json({ message: 'Error al crear la notificación de cambio de estado', error: err.message });
+//  }
+//};
 
 
 
 // Notificación cuando un artículo favorito cambia de precio
-export const notifyPriceChange = async (req, res, next) => {
-  const { advertId } = req.body;
-  try {
-    const advert = await Advert.findById(advertId);
-
-    if (!advert) {
-      return res.status(404).json({ message: 'Anuncio no encontrado' });
-    }
-
-    const usersWithFavorite = await User.find({ favorites: advertId });
-
-    if (usersWithFavorite.length === 0) {
-      return res.status(404).json({ message: 'No hay usuarios que tengan este anuncio como favorito' });
-    }
-
-    const priceChangeNotificationType = "price-change";
-
-    // Enviar notificación a cada usuario
-    usersWithFavorite.forEach(async (user) => {
-      const newNotification = new Notification({
-        user: user.id,
-        notificationType: priceChangeNotificationType,
-        message: `El artículo "${advert.title}" ha cambiado de precio.`,
-        read: false,
-        advert: advertId,
-      });
-      await newNotification.save();
-    });
-
-    res.status(201).json({ message: 'Notificación de cambio de precio enviada' });
-  } catch (err) {
-    next(err);
-    res.status(500).json({ message: 'Error al crear la notificación', error: err.message });
-  }
-};
+//export const notifyPriceChange = async (req, res, next) => {
+//  const { advertId } = req.body;
+//  try {
+//    const advert = await Advert.findById(advertId);
+//
+//    if (!advert) {
+ //     return res.status(404).json({ message: 'Anuncio no encontrado' });
+ //   }
+//
+ //   const usersWithFavorite = await User.find({ favorites: advertId });
+//
+//    if (usersWithFavorite.length === 0) {
+//      return res.status(404).json({ message: 'No hay usuarios que tengan este anuncio como favorito' });
+ //   }
+//
+//    const priceChangeNotificationType = "price-change";
+//
+//    // Enviar notificación a cada usuario
+//    usersWithFavorite.forEach(async (user) => {
+ //     const newNotification = new Notification({
+//        user: user.id,
+//        notificationType: priceChangeNotificationType,
+//        message: `El artículo "${advert.title}" ha cambiado de precio.`,
+///        read: false,
+//        advert: advertId,
+//      });
+//      await newNotification.save();
+//    });
+//
+//    res.status(201).json({ message: 'Notificación de cambio de precio enviada' });
+//  } catch (err) {
+//    next(err);
+//    res.status(500).json({ message: 'Error al crear la notificación', error: err.message });
+//  }
+//};
 
 
 // Notificación cuando un usuario elimina un favorito
-export const notifyFavoriteRemoved = async (req, res, next) => {
-  const { advertId } = req.body;
-  try {
-    const advert = await Advert.findById(advertId);
+//export const notifyFavoriteRemoved = async (req, res, next) => {
+//  const { advertId } = req.body;
+//  try {
+//    const advert = await Advert.findById(advertId);
+//
+//    if (!advert) {
+ //     return res.status(404).json({ message: 'Anuncio no encontrado' });
+//    }
+//
+ //   const usersWithFavorite = await User.find({ favorites: advertId });
 
-    if (!advert) {
-      return res.status(404).json({ message: 'Anuncio no encontrado' });
-    }
+ //   if (usersWithFavorite.length === 0) {
+//      return res.status(404).json({ message: 'No hay usuarios que tengan este anuncio como favorito' });
+//    }
 
-    const usersWithFavorite = await User.find({ favorites: advertId });
+//    const favoriteRemovedNotificationType = "favorite-removed";
 
-    if (usersWithFavorite.length === 0) {
-      return res.status(404).json({ message: 'No hay usuarios que tengan este anuncio como favorito' });
-    }
+ //   // Enviar notificación a cada usuario
+ //   usersWithFavorite.forEach(async (user) => {
+//      const newNotification = new Notification({
+//        user: user.id,
+//        notificationType: favoriteRemovedNotificationType,
+//        message: `El artículo "${advert.title}" ha sido eliminado de tus favoritos.`,
+//        read: false,
+//        advert: advertId,
+//      });
+//      await newNotification.save();
+//    });
 
-    const favoriteRemovedNotificationType = "favorite-removed";
-
-    // Enviar notificación a cada usuario
-    usersWithFavorite.forEach(async (user) => {
-      const newNotification = new Notification({
-        user: user.id,
-        notificationType: favoriteRemovedNotificationType,
-        message: `El artículo "${advert.title}" ha sido eliminado de tus favoritos.`,
-        read: false,
-        advert: advertId,
-      });
-      await newNotification.save();
-    });
-
-    res.status(201).json({ message: 'Notificación de eliminación de favorito enviada' });
-  } catch (err) {
-    next(err);
-    res.status(500).json({ message: 'Error al crear la notificación', error: err.message });
-  }
-};
+//    res.status(201).json({ message: 'Notificación de eliminación de favorito enviada' });
+//  } catch (err) {
+//    next(err);
+//    res.status(500).json({ message: 'Error al crear la notificación', error: err.message });
+//  }
+//};
 
 
 // Notificación de nuevo mensaje en el chat
-export const notifyNewChatMessage = async (req, res, next) => {
-  const { chatId } = req.body;
+//export const notifyNewChatMessage = async (req, res, next) => {
+//  const { chatId } = req.body;
 
-  try {
-    const chat = await Chat.findById(chatId)
-      .populate('advertId')
-      .populate('users');
+//  try {
+//    const chat = await Chat.findById(chatId)
+//      .populate('advertId')
+//      .populate('users');
+//
+//    if (!chat) {
+//      return res.status(404).json({ message: 'Chat no encontrado' });
+//    }
+//
+//    const advert = chat.advertId;
+//    if (!advert) {
+//      return res.status(404).json({ message: 'Anuncio no encontrado' });
+//    }
 
-    if (!chat) {
-      return res.status(404).json({ message: 'Chat no encontrado' });
-    }
-
-    const advert = chat.advertId;
-    if (!advert) {
-      return res.status(404).json({ message: 'Anuncio no encontrado' });
-    }
-
-    const userIds = chat.users.map(user => user.id);
+//    const userIds = chat.users.map(user => user.id);
 
     // Trunca el título del anuncio si es muy largo
-    const truncatedTitle = advert.title.length > 50 ? advert.title.substring(0, 50) + '...' : advert.title;
-    const message = `Tienes un nuevo mensaje en la conversación sobre "${truncatedTitle}".`;
+//    const truncatedTitle = advert.title.length > 50 ? advert.title.substring(0, 50) + '...' : advert.title;
+//    const message = `Tienes un nuevo mensaje en la conversación sobre "${truncatedTitle}".`;
 
-    for (const userId of userIds) {
-      const newNotification = new Notification({
-        user: userId,
-        notificationType: 'new-chat-message',
-        message,
-        read: false,
-        advert: advert.id,
-        chatId: chat.id,
-      });
+//    for (const userId of userIds) {
+//      const newNotification = new Notification({
+//        user: userId,
+//        notificationType: 'new-chat-message',
+//        message,
+//        read: false,
+//        advert: advert.id,
+//        chatId: chat.id,
+//      });
 
-      await newNotification.save();
-    }
+//      await newNotification.save();
+//    }
 
-    res.status(201).json({ message: 'Notificación de nuevo mensaje enviada' });
-  } catch (err) {
-    next(err);
-    res.status(500).json({ message: 'Error al crear la notificación', error: err.message });
-  }
-};
+//    res.status(201).json({ message: 'Notificación de nuevo mensaje enviada' });
+//  } catch (err) {
+//    next(err);
+//    res.status(500).json({ message: 'Error al crear la notificación', error: err.message });
+//  }
+//};
 
 
 // Crear conversación por anuncio
@@ -541,7 +542,7 @@ export const createChat = async (req, res, next) => {
 
 
 
-// Enviar mensaje en un chat
+// Enviar mensaje en un chat ///////////////////////////////////////////////////////////////////////////////////////
 export const sendMessageToChat = async (req, res, next) => {
   const { chatId } = req.params;
   const { content } = req.body;
@@ -569,15 +570,12 @@ export const sendMessageToChat = async (req, res, next) => {
 
     const receiver = chat.users.find(user => user._id.toString() !== senderId);
 
-    if (receiver) {
-      const notification = new Notification({
-        user: receiver.id,
-        notificationType: 'new-chat-message',
-        message: `Tienes un nuevo mensaje en la conversación sobre "${chat.advertId.title}".`,
-        advertId: chat.advertId,
-        read: false,
+    if (receiver) { /////////////////////////////////////////////////////
+      await notifyNewMessage({ ///////////////////////////////////////
+        advertId: chat.advertId,/////////////////////////////////
+        senderId,////////////////////////////////////////
+        recipientId: receiver._id, ////////////////////////////////////////
       });
-      await notification.save();
     }
 
     res.status(201).json({ message: 'Mensaje enviado' });

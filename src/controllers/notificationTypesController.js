@@ -77,7 +77,7 @@ export const deleteNotificationType = async (req, res, next) => {
   }
 };
 
-// Crear el mensaje de notificación basado en el template
+// Crear el mensaje de notificación basado en el template para alimentar los placeholders '{title}' etc.
 export const generateNotificationMessage = async (typeCode, data) => { 
   const notificationType = await NotificationType.findOne({ code: typeCode });
 

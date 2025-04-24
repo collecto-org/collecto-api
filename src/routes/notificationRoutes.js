@@ -7,15 +7,24 @@ import {
   updateNotificationType,
   deleteNotificationType,
 } from '../controllers/notificationTypesController.js';
+import {
+  getUserNotifications,
+  markNotificationAsRead
+} from '../controllers/notificationController.js';
+
 
 const router = express.Router();
 
-// Rutas públicas para obtener tipos de notificación
-router.get('/', getAllNotificationTypes);  // Mostrar todos los tipos de notificación
+// Notifications 
+router.get('/user', verifyToken, getUserNotifications);
+router.patch('/:id/read', verifyToken, markNotificationAsRead);
 
+// Notification Types
+// Rutas públicas para obtener tipos de notificación
+router.get('/types', getAllNotificationTypes);  // Mostrar todos los tipos de notificación
 // Rutas protegidas para administradores
-router.post('/', verifyToken, verifyAdmin, createNotificationType);  // Crear nuevo tipo de notificación (solo admin)
-router.put('/:id', verifyToken, verifyAdmin, updateNotificationType);  // Actualizar tipo de notificación (solo admin)
-router.delete('/:id', verifyToken, verifyAdmin, deleteNotificationType);  // Eliminar tipo de notificación (solo admin)
+router.post('/types', verifyToken, verifyAdmin, createNotificationType);  // Crear nuevo tipo de notificación (solo admin)
+router.put('/types/:id', verifyToken, verifyAdmin, updateNotificationType);  // Actualizar tipo de notificación (solo admin)
+router.delete('/types/:id', verifyToken, verifyAdmin, deleteNotificationType);  // Eliminar tipo de notificación (solo admin)
 
 export default router;
