@@ -12,7 +12,7 @@ const verifyAdvertOwner = async (req, res, next) => {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
 
-    if (advert.user.toString() !== req.user) {
+    if (advert.user._id.toString() !== req.user.id) {
       return res.status(403).json({ message: 'No tienes permiso para editar este anuncio' });
     }
 

@@ -50,7 +50,7 @@ app.use(cors({ origin: 'http://localhost:5173', credentials: true})); // Habilit
 app.use('/api/auth', authRoutes); // Autenticación y gestión de sesión
 app.use('/api/adverts', advertsRoutes); // Anuncios
 app.use('/api/users', usersRoutes); // Gestión de usuarios
-app.use('/api', statusRoutes); // Estado de las ordenes, anuncios y pagos  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< STATUS
+app.use('/api/status', statusRoutes); // Estado de las ordenes, anuncios y pagos  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< STATUS
 app.use('/api/orders', orderRoutes); // Ordenes de pedido
 app.use('/api/payments', paymentRoutes); // Pagos
 app.use('/api/shipments', shipmentRoutes); // Envíos

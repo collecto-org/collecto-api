@@ -468,7 +468,7 @@ export const editAdvert = async (req, res, next) => {
     images,
   } = req.body;
 
-  let newImages = req.body.imageUrls || [];
+  let newImages = Array.isArray(req.body.imageUrls) ? req.body.imageUrls : [];
 
   try {
     const advert = await Advert.findById(id);
@@ -485,8 +485,10 @@ export const editAdvert = async (req, res, next) => {
       return res.status(403).json({ message: 'No tienes permiso para editar este anuncio.' });
     }
 
-    // Eliminar imágenes no deseadas
-    const imagesToDelete = advert.images.filter(image => !images.includes(image));
+    const imagesToDelete = Array.isArray(advert.images) && Array.isArray(newImages)
+      ? advert.images.filter(image => !newImages.includes(image))
+      : [];
+
     if (imagesToDelete.length > 0) {
       for (const imageUrl of imagesToDelete) {
         const publicId = extractPublicId(imageUrl);
