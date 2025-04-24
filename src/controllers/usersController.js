@@ -3,6 +3,8 @@ import User from '../models/user.js';
 import Chat from '../models/chat.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { notifyNewMessage } from './notificationController.js';
+import { extractPublicId } from '../utils/upload.js';
+
 
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
@@ -118,12 +120,15 @@ export const editUserProfile = async (req, res, next) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    if (user.avatarUrl && avatarUrl !== user.avatarUrl) {
-      const publicId = user.avatarUrl.split('/').pop().split('.')[0];
-      await cloudinary.uploader.destroy(publicId);
+    if (user.avatarUrl && avatarUrl && avatarUrl !== user.avatarUrl) {
+      const publicId = extractPublicId(user.avatarUrl);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+      } else {
+        console.warn(`No se pudo extraer el public_id del avatar anterior: ${user.avatarUrl}`);
+      }
     }
 
-    // Actualizamos el usuario
     const updatedUser = await User.findByIdAndUpdate(userId, dataToUpdate, { new: true });
 
     res.status(200).json({
@@ -152,8 +157,12 @@ export const deleteUserProfile = async (req, res, next) => {
     await User.findByIdAndDelete(userId);
 
     if (user.avatarUrl) {
-      const publicId = user.avatarUrl.split('/').pop().split('.')[0];
-      await cloudinary.uploader.destroy(publicId);
+      const publicId = extractPublicId(user.avatarUrl);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+      } else {
+        console.warn(`No se pudo extraer el public_id del avatar: ${user.avatarUrl}`);
+      }
     }
 
     res.status(200).json({ message: 'Cuenta eliminada' });

@@ -3,6 +3,7 @@ import Status from '../models/status.js';
 import User from '../models/user.js';
 //import { v2 as cloudinary } from 'cloudinary';
 import cloudinary from '../config/cloudinaryConfig.js'
+import { extractPublicId } from '../utils/upload.js';
 import { notifyStatusChange, notifyPriceChange, notifyAdvertDeleted  } from './notificationController.js'; ////////////////////////////////////////////////////////////
 
 
@@ -487,14 +488,18 @@ export const editAdvert = async (req, res, next) => {
     // Eliminar imágenes no deseadas
     const imagesToDelete = advert.images.filter(image => !images.includes(image));
     if (imagesToDelete.length > 0) {
-      imagesToDelete.forEach(imageUrl => {
-        const publicId = imageUrl.split('/').pop().split('.')[0];
-        cloudinary.uploader.destroy(publicId, (err) => {
-          if (err) {
-            console.error(`Error al eliminar la imagen de Cloudinary: ${imageUrl}`, err);
-          }
-        });
-      });
+      for (const imageUrl of imagesToDelete) {
+        const publicId = extractPublicId(imageUrl);
+        if (publicId) {
+          cloudinary.uploader.destroy(publicId, (err) => {
+            if (err) {
+              console.error(`Error al eliminar la imagen de Cloudinary: ${imageUrl}`, err);
+            }
+          });
+        } else {
+          console.warn(`No se pudo extraer public_id de la URL: ${imageUrl}`);
+        }
+      }
     }
 
     // Actualizar el anuncio
@@ -545,15 +550,18 @@ export const deleteAdvert = async (req, res, next) => {
     await notifyAdvertDeleted(advert);
 
     if (advert.images && advert.images.length > 0) {
-      advert.images.forEach(imageUrl => {
-        const publicId = imageUrl.split('/').pop().split('.')[0];
-
-        cloudinary.uploader.destroy(publicId, (err, result) => {
-          if (err) {
-            console.error(`Error al eliminar imagen de Cloudinary: ${imageUrl}`, err);
-          }
-        });
-      });
+      for (const imageUrl of advert.images) {
+        const publicId = extractPublicId(imageUrl);
+        if (publicId) {
+          cloudinary.uploader.destroy(publicId, (err) => {
+            if (err) {
+              console.error(`Error al eliminar imagen de Cloudinary: ${imageUrl}`, err);
+            }
+          });
+        } else {
+          console.warn(`No se pudo extraer public_id de la URL: ${imageUrl}`);
+        }
+      }
     }
 
     //  Eliminar el anuncio de los favoritos de los usuarios

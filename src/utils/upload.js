@@ -84,3 +84,8 @@ export const uploadAdvertsToCloudinary = async (req, res, next) => {
     res.status(500).json({ message: 'Error al procesar la subida de las imágenes del anuncio', error: err.message });
   }
 };
+
+export const extractPublicId = (url) => {
+  const matches = url.match(/upload\/(?:v\d+\/)?(.+)\.(jpg|jpeg|png|webp)$/);
+  return matches ? matches[1] : null;
+};
