@@ -1,9 +1,8 @@
 import Advert from '../models/advert.js';
 import User from '../models/user.js';
-import Notification from '../models/notification.js';
 import Chat from '../models/chat.js';
 import { v2 as cloudinary } from 'cloudinary';
-import { notifyNewMessage } from './notificationsController.js';
+import { notifyNewMessage } from './notificationController.js';
 
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)

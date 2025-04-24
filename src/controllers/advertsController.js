@@ -1,6 +1,4 @@
 import Advert from '../models/advert.js';
-import Notification from '../models/notification.js';
-import NotificationType from '../models/notificationTypes.js';
 import Status from '../models/status.js';
 import User from '../models/user.js';
 //import { v2 as cloudinary } from 'cloudinary';

@@ -1,5 +1,5 @@
 import Notification from '../models/notification.js';
-import NotificationType from '../models/notificationType.js';
+import NotificationType from '../models/notificationTypes.js';
 import User from '../models/user.js';
 import Advert from '../models/advert.js';
 
