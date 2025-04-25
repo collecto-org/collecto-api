@@ -3,7 +3,9 @@ import Universe from '../models/universe.js';
 // Ver los universos disponibles
 export const getAllUniverses = async (req, res, next) => {
   try {
-    const universes = await Universe.find();
+    const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1; 
+
+    const universes = await Universe.find().sort({ order: sortOrder });
 
     if (!universes.length) {
       return res.status(404).json({ message: 'No hay universos disponibles.' });

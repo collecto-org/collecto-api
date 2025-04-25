@@ -3,7 +3,9 @@ import Brand from '../models/brand.js';
 // Ver las marcas disponibles
 export const getAllBrands = async (req, res, next) => {
   try {
-    const brands = await Brand.find();
+    const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1;
+
+    const brands = await Brand.find().sort({ order: sortOrder  });
 
     if (!brands.length) {
       return res.status(404).json({ message: 'No hay marcas disponibles' });
