@@ -4,7 +4,9 @@ import { createNotificationMessage } from '../utils/notificationUtils.js';
 // Ver los tipos de notificación disponibles
 export const getAllNotificationTypes = async (req, res, next) => {
   try {
-    const notificationTypes = await NotificationType.find();
+    const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1;
+    
+    const notificationTypes = await NotificationType.find().sort({ order: sortOrder });
 
     if (!notificationTypes.length) {
       return res.status(404).json({ message: 'No hay tipos de notificación disponibles' });

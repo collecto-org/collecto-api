@@ -3,7 +3,9 @@ import ProductType from '../models/productType.js';
 //Ver los tipos de productos disponibles
 export const getAllProductTypes = async (req, res, next) => {
   try {
-    const productTypes = await ProductType.find();
+    const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1;
+
+    const productTypes = await ProductType.find().sort({ order: sortOrder });
 
     if (!productTypes.length) {
       return res.status(404).json({ message: 'No hay tipos de productos disponibles' });

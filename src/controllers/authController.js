@@ -143,6 +143,7 @@ export const verifyRegisterEmail = async (req, res, next) => {
     // activa si es valido
     user.emailVerified = true;
     await user.save();
+    return res.status(200).json({message: 'Usuario registrado'})
 
     // Redirige al frontend a una página de éxito
     const frontendUrl = process.env.FRONTEND_URL;

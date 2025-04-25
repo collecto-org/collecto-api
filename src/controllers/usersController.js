@@ -10,6 +10,24 @@ import { extractPublicId } from '../utils/upload.js';
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
 export const getUserAdverts = async (req, res, next) => {
   const { username } = req.params;
+  const { 
+    page = 1, 
+    limit = 12, 
+    title, 
+    priceMin, 
+    priceMax, 
+    tags, 
+    status, 
+    transaction, 
+    collectionref, 
+    createdAtMin, 
+    createdAtMax, 
+    brand, 
+    product_type, 
+    universe, 
+    condition, 
+    slug 
+  } = req.query;
 
   try {
     const user = await User.findOne({ username: username });
@@ -18,8 +36,43 @@ export const getUserAdverts = async (req, res, next) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    const totalAdverts = await Advert.countDocuments({ user: user._id });
-    const adverts = await Advert.find({ user: user._id });
+    const query = { 
+      user: user._id
+    };
+
+    if (priceMin || priceMax) {
+      query.price = { 
+        $gte: priceMin || 0, 
+        $lte: priceMax || Infinity 
+      };
+    }
+    if (title) query.title = { $regex: title, $options: 'i' };
+    if (tags) query.tags = { $in: tags.split(',') };
+    if (status) query.status = status;
+    if (transaction) query.transaction = transaction;
+    if (collectionref) query.collection = collectionref;
+    if (createdAtMin || createdAtMax) {
+      query.createdAt = {};
+      if (createdAtMin) query.createdAt.$gte = new Date(createdAtMin);
+      if (createdAtMax) query.createdAt.$lte = new Date(createdAtMax);
+    }
+    if (brand) query.brand = brand;
+    if (product_type) query.product_type = product_type;
+    if (universe) query.universe = universe;
+    if (condition) query.condition = condition;
+    if (slug) query.slug = { $regex: slug, $options: 'i' };
+
+    const adverts = await Advert.find(query)
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .populate('transaction')
+      .populate('status')
+      .populate('product_type')
+      .populate('universe')
+      .populate('condition')
+      .populate('brand');
+
+    const totalAdverts = await Advert.countDocuments(query);
 
     if (!adverts.length) {
       return res.status(404).json({ message: 'No se encontraron anuncios para este usuario' });
@@ -27,11 +80,11 @@ export const getUserAdverts = async (req, res, next) => {
 
     if (req.user) {
       const favorites = req.user.favorites.map(id => id.toString());
-      
+
       const advertsWithFavStatus = adverts.map(advert => ({
         ...advert.toObject(),
         images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
-        isFavorite: favorites.includes(advert._id.toString())
+        isFavorite: favorites.includes(advert._id.toString()),
       }));
 
       return res.status(200).json({
@@ -96,7 +149,7 @@ export const editUserProfile = async (req, res, next) => {
 
   let avatarUrl;
 
-  if (req.body.imageUrls && req.body.imageUrls.length > 0) {
+  if (Array.isArray(req.body.imageUrls) && req.body.imageUrls.length > 0) {
     avatarUrl = req.body.imageUrls[0];
   }
 
@@ -176,12 +229,52 @@ export const deleteUserProfile = async (req, res, next) => {
 
 // Ver anuncios de uno mismo
 export const getOwnAdverts = async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    const { page = 1, limit = 12 } = req.query;  // Paginación
+  const userId = req.user.id;
+  const { 
+    page = 1, 
+    limit = 12, 
+    title, 
+    priceMin, 
+    priceMax, 
+    tags, 
+    status, 
+    transaction, 
+    collectionref, 
+    createdAtMin, 
+    createdAtMax, 
+    brand, 
+    product_type, 
+    universe, 
+    condition, 
+    slug 
+  } = req.query;
 
-    // Consulta para obtener los anuncios de un usuario con paginación
-    const adverts = await Advert.find({ user: userId })
+  try {
+    const query = { user: userId };
+
+    if (priceMin || priceMax) {
+      query.price = { 
+        $gte: priceMin || 0, 
+        $lte: priceMax || Infinity 
+      };
+    }
+    if (title) query.title = { $regex: title, $options: 'i' };
+    if (tags) query.tags = { $in: tags.split(',') };
+    if (status) query.status = status;
+    if (transaction) query.transaction = transaction;
+    if (collectionref) query.collection = collectionref;
+    if (createdAtMin || createdAtMax) {
+      query.createdAt = {};
+      if (createdAtMin) query.createdAt.$gte = new Date(createdAtMin);
+      if (createdAtMax) query.createdAt.$lte = new Date(createdAtMax);
+    }
+    if (brand) query.brand = brand;
+    if (product_type) query.product_type = product_type;
+    if (universe) query.universe = universe;
+    if (condition) query.condition = condition;
+    if (slug) query.slug = { $regex: slug, $options: 'i' };
+
+    const adverts = await Advert.find(query)
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .populate('transaction')
@@ -191,7 +284,7 @@ export const getOwnAdverts = async (req, res, next) => {
       .populate('condition')
       .populate('brand');
 
-    const totalAdverts = await Advert.countDocuments({ user: userId });
+    const totalAdverts = await Advert.countDocuments(query);
 
     if (!adverts.length) {
       return res.status(404).json({ message: 'No tienes anuncios publicados.' });
@@ -208,39 +301,111 @@ export const getOwnAdverts = async (req, res, next) => {
 };
 
 
+
 // Obtener "Mis anuncios favoritos" (favoritos del usuario autenticado)
 export const getUserFavorites = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { page = 1, limit = 12 } = req.query;
+    const { 
+      page = 1, 
+      limit = 12, 
+      title, 
+      priceMin, 
+      priceMax, 
+      tags, 
+      status, 
+      transaction, 
+      collectionref, 
+      createdAtMin, 
+      createdAtMax, 
+      brand, 
+      product_type, 
+      universe, 
+      condition, 
+      slug, 
+    } = req.query;
 
-    const user = await User.findById(userId)
-      .skip((page - 1) * limit)
-      .limit(Number(limit))
-      .populate('favorites')
-      .populate('favorites.transaction')
-      .populate('favorites.status')
-      .populate('favorites.product_type')
-      .populate('favorites.universe')
-      .populate('favorites.condition')
-      .populate('favorites.brand');
-      
+    const user = await User.findById(userId);
 
-    const totalFavorites = user.favorites.length;
-
-    if (!user || totalFavorites === 0) {
+    if (!user || !user.favorites || user.favorites.length === 0) {
       return res.status(404).json({ message: 'No tienes anuncios favoritos.' });
     }
 
+
+    const query = { 
+      _id: { $in: user.favorites }
+    };
+
+    if (priceMin || priceMax) {
+      query.price = { 
+        $gte: priceMin || 0, 
+        $lte: priceMax || Infinity 
+      };
+    }
+    if (title) query.title = { $regex: title, $options: 'i' };
+    if (tags) query.tags = { $in: tags.split(',') };
+    if (status) query.status = status;
+    if (transaction) query.transaction = transaction;
+    if (collectionref) query.collection = collectionref;
+    if (createdAtMin || createdAtMax) {
+      query.createdAt = {};
+      if (createdAtMin) query.createdAt.$gte = new Date(createdAtMin);
+      if (createdAtMax) query.createdAt.$lte = new Date(createdAtMax);
+    }
+    if (brand) query.brand = brand;
+    if (product_type) query.product_type = product_type;
+    if (universe) query.universe = universe;
+    if (condition) query.condition = condition;
+    if (slug) query.slug = { $regex: slug, $options: 'i' };
+
+    // Obtener los anuncios favoritos con filtros aplicados
+    const adverts = await Advert.find(query)
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .populate('transaction')
+      .populate('status')
+      .populate('product_type')
+      .populate('universe')
+      .populate('condition')
+      .populate('brand');
+
+    const totalFavorites = await Advert.countDocuments(query);
+
+    if (!adverts.length) {
+      return res.status(404).json({ message: 'No se encontraron anuncios favoritos que coincidan con los filtros.' });
+    }
+
+    if (req.user) {
+      const favorites = req.user.favorites.map(id => id.toString());
+
+      const advertsWithFavStatus = adverts.map(advert => ({
+        ...advert.toObject(),
+        images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+        isFavorite: favorites.includes(advert._id.toString()),
+      }));
+
+      return res.status(200).json({
+        total: totalFavorites,
+        adverts: advertsWithFavStatus,
+      });
+    }
+
+    const advertsWithoutFavStatus = adverts.map(advert => ({
+      ...advert.toObject(),
+      images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+    }));
+
     res.status(200).json({
-      total: totalFavorites,  // Total de anuncios favoritos
-      adverts: user.favorites,  // Los anuncios favoritos
+      total: totalFavorites,
+      adverts: advertsWithoutFavStatus,
     });
+
   } catch (err) {
     next(err);
-    res.status(500).json({ message: 'Error al obtener favoritos', error: err.message });
+    res.status(500).json({ message: 'Error al obtener los anuncios favoritos', error: err.message });
   }
 };
+
 
 
 // Agregar un anuncio a favoritos

@@ -6,14 +6,21 @@ import cloudinary from '../config/cloudinaryConfig.js'
 import { extractPublicId } from '../utils/upload.js';
 import { notifyStatusChange, notifyPriceChange, notifyAdvertDeleted  } from './notificationController.js'; ////////////////////////////////////////////////////////////
 
-
+// Obtener todos los anuncios
 export const getAllAdverts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 12, sortBy = 'createdAt' } = req.query;
+    const { page = 1, limit = 12, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
-    // Consulta para obtener anuncios
-    const adverts = await Advert.find()
-      .sort({ [sortBy]: -1 })
+    const allowedSortFields = ['price', 'createdAt', 'title'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const order = sortOrder === 'asc' ? 1 : -1;
+
+    const availableStatuses = await Status.find({ code: { $in: ['available', 'reserved'] } });
+
+    const availableStatusIds = availableStatuses.map(status => status._id);
+
+    const adverts = await Advert.find({ status: { $in: availableStatusIds } })
+      .sort({ [sortField]: order })
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .populate('transaction')
@@ -22,24 +29,21 @@ export const getAllAdverts = async (req, res, next) => {
       .populate('universe')
       .populate('condition')
       .populate('brand')
-      .populate('user'); 
+      .populate('user');
 
-    const totalAdverts = await Advert.countDocuments(); // Consulta del total de anuncios disponibles
+    const totalAdverts = await Advert.countDocuments({ status: { $in: availableStatusIds } });
 
-    // Comprobar si el usuario está autenticado
-    const advertsWithFavStatus = []; // Inicializar el arreglo vacío
+    const advertsWithFavStatus = [];
 
     for (const advert of adverts) {
       const advertObject = advert.toObject();
 
-      // Mapear las imágenes de cada anuncio para usar Cloudinary
       const imagesWithUrls = Array.isArray(advertObject.images)
-      ? advertObject.images.map(image =>
-          cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })
-        )
-      : [];
+        ? advertObject.images.map(image =>
+            cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })
+          )
+        : [];
 
-      // Si el usuario está autenticado, añadir el estado de favorito
       if (req.user) {
         const userId = req.user.id;
         const user = await User.findById(userId);
@@ -49,7 +53,7 @@ export const getAllAdverts = async (req, res, next) => {
         advertsWithFavStatus.push({
           ...advertObject,
           images: imagesWithUrls,
-          isFavorite
+          isFavorite,
         });
       } else {
         advertsWithFavStatus.push({
@@ -59,20 +63,17 @@ export const getAllAdverts = async (req, res, next) => {
       }
     }
 
-    // Verificar si no se encontraron anuncios
-    if (advertsWithFavStatus.length === 0) {
-      return res.status(404).json({ message: 'No se encontraron anuncios' });
-    }
-
-    return res.status(200).json({
-      total: totalAdverts,
+    res.status(200).json({
       adverts: advertsWithFavStatus,
+      total: totalAdverts,
     });
+
   } catch (err) {
-    next(err); 
-    res.status(500).json({ message: 'Error al obtener anuncios', error: err.message });
+    next(err);
+    res.status(500).json({ message: 'Error al obtener los anuncios', error: err.message });
   }
 };
+
 
 
 // Detalle de un anuncio
@@ -526,7 +527,7 @@ export const editAdvert = async (req, res, next) => {
     images,
   } = req.body;
 
-  let newImages = req.body.imageUrls || [];
+  let newImages = Array.isArray(req.body.imageUrls) ? req.body.imageUrls : [];
 
   try {
     const advert = await Advert.findById(id);
@@ -534,6 +535,8 @@ export const editAdvert = async (req, res, next) => {
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
+
+    const oldPrice = advert.price;
 
     if (advert.status === 'vendido') {
       return res.status(400).json({ message: 'No se puede editar un anuncio ya vendido.' });
@@ -543,8 +546,10 @@ export const editAdvert = async (req, res, next) => {
       return res.status(403).json({ message: 'No tienes permiso para editar este anuncio.' });
     }
 
-    // Eliminar imágenes no deseadas
-    const imagesToDelete = advert.images.filter(image => !images.includes(image));
+    const imagesToDelete = Array.isArray(advert.images) && Array.isArray(newImages)
+      ? advert.images.filter(image => !newImages.includes(image))
+      : [];
+
     if (imagesToDelete.length > 0) {
       for (const imageUrl of imagesToDelete) {
         const publicId = extractPublicId(imageUrl);
@@ -572,7 +577,7 @@ export const editAdvert = async (req, res, next) => {
     advert.collectionref = collectionref || advert.collectionref;
     advert.brand = brand || advert.brand;
     advert.tags = tags || advert.tags;
-    advert.images = newImages.length > 0 ? [...advert.images, ...newImages] : advert.images;
+    advert.images = newImages.length > 0 ? newImages : advert.images;
     advert.updatedAt = Date.now();
 
     await advert.save();

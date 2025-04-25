@@ -3,7 +3,9 @@ import Status from '../models/status.js';
 // Ver los estados disponibles
 export const getAllStatuses = async (req, res, next) => {
   try {
-    const statuses = await Status.find();
+    const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1; 
+    
+    const statuses = await Status.find().sort({ order: sortOrder });
 
     if (!statuses.length) {
       return res.status(404).json({ message: 'No hay estados disponibles.' });
