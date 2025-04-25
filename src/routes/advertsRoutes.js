@@ -8,6 +8,7 @@ import {
   getAllAdverts,
   getAdvertBySlug,
   searchAdverts,
+  getAdvertOGView,
   // getAdvertStatusBySlug,
   updateAdvertStatus,
   uploadImages,
@@ -23,6 +24,7 @@ const router = express.Router();
 router.get('/search', loadUserIfAuthenticated, searchAdverts); // Filtro de anuncios
 router.get('/', loadUserIfAuthenticated, getAllAdverts); // Obtener todos los anuncios
 router.get('/:slug', loadUserIfAuthenticated, getAdvertBySlug); // Detalles del anuncio
+router.get("/og/:slug", getAdvertOGView); // detalle del anuncio con metadatos
 // router.get('/:slug/status', getAdvertStatusBySlug); // Ver estado del anuncio       // MARECADO PARA BORRAR
 // Ver anuncios de un usuario específico se encuentra en usersRoutes.js
 router.patch('/:id/status', verifyToken, updateAdvertStatus);  // Cambiar estado y visibilidad del anuncio

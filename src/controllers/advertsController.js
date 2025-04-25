@@ -116,6 +116,64 @@ export const getAdvertBySlug = async (req, res, next) => {
 };
 
 
+export const getAdvertOGView = async (req, res, next) => {
+  const { slug } = req.params;
+
+  try {
+    const advert = await Advert.findOne({ slug })
+      .populate('transaction')
+      .populate('status')
+      .populate('product_type')
+      .populate('universe')
+      .populate('condition')
+      .populate('brand')
+      .populate('user');
+
+    if (!advert) {
+      return res.status(404).send("Anuncio no encontrado");
+    }
+
+    const imageUrl = advert.images?.length
+      ? cloudinary.url(advert.images[0], {
+          fetch_format: 'auto',
+          quality: 'auto',
+        })
+      : 'https://collecto.es/default-og-image.jpg'; // fallback
+
+    const title = `${advert.title} por €${advert.price}`;
+    const description = advert.description || "Artículo de colección disponible en Collecto";
+    const canonicalUrl = `https://collecto.es/adverts/${slug}`;
+
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="es">
+        <head>
+          <meta charset="utf-8">
+          <title>${title}</title>
+          <meta name="description" content="${description}" />
+          <meta property="og:title" content="${title}" />
+          <meta property="og:description" content="${description}" />
+          <meta property="og:image" content="${imageUrl}" />
+          <meta property="og:url" content="${canonicalUrl}" />
+          <meta property="og:type" content="article" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="${title}" />
+          <meta name="twitter:description" content="${description}" />
+          <meta name="twitter:image" content="${imageUrl}" />
+          <meta http-equiv="refresh" content="0; URL='${canonicalUrl}'" />
+        </head>
+        <body>
+          <p>Redirigiendo a <a href="${canonicalUrl}">${canonicalUrl}</a>...</p>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error("Error generando metadatos OG:", err);
+    res.status(500).send("Error interno al generar los metadatos OG.");
+  }
+};
+
+
 // Filtro de anuncios
 // Añado el parametro query para buscar palabras sueltas en el buscador.
 // Cuando este endpoint se usa para filtrar anuncios, no se le pasa el parametro
