@@ -252,6 +252,7 @@ export const getOwnAdverts = async (req, res, next) => {
   try {
     const query = { user: userId };
 
+
     if (priceMin || priceMax) {
       query.price = { 
         $gte: priceMin || 0, 

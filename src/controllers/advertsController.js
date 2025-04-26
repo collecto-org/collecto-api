@@ -442,7 +442,7 @@ export const createAdvert = async (req, res, next) => {
 
     res.status(201).json({
       message: 'Anuncio creado',
-      anuncio: newAdvert,
+      advert: newAdvert,
     });
   } catch (err) {
     next(err);
@@ -470,6 +470,22 @@ export const editAdvert = async (req, res, next) => {
   } = req.body;
 
   let newImages = Array.isArray(req.body.imageUrls) ? req.body.imageUrls : [];
+
+  const bodyImages = req.body.imagesUrl;
+  console.log(typeof bodyImages);
+  
+  // Si `bodyImages` es un array, lo añades directamente
+  if (Array.isArray(bodyImages)) {
+    bodyImages.forEach(image => {
+      newImages.push(image); // Agrega cada imagen del array individualmente
+    });
+  } else if (typeof bodyImages === "string") {
+    newImages.push(bodyImages); // Si es un string, lo agregas directamente
+  } else {
+    console.log("El tipo de bodyImages no es válido");
+  }
+  
+  console.log("newImages:", newImages);
 
   try {
     const advert = await Advert.findById(id);
