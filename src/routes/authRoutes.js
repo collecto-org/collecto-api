@@ -18,7 +18,7 @@ const router = express.Router();
 
 router.post('/register', register, uploadAvatarToCloudinary); // Sign up
 
-router.get('/verify-email/:token', verifyRegisterEmail); // Verificar el correo
+router.post('/verify-email/:token', verifyRegisterEmail); // Verificar el correo
 
 router.post('/login', login);  // Login (con opción de "Recordar sesión")
 router.post('/logout', logout);  // Logout
