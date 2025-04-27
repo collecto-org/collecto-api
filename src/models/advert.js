@@ -24,8 +24,10 @@ const advertSchema = new mongoose.Schema({
 
 // Generación del slug
 advertSchema.pre('save', function(next) {
-  const timestamp = Date.now();
-  this.slug = slugify(this.title, { lower: true, strict: true })  + `-${timestamp}`;
+  if (this.isModified('title')) {  // <-- Solo si ha cambiado el title
+    const timestamp = Date.now();
+    this.slug = slugify(this.title, { lower: true, strict: true }) + `-${timestamp}`;
+  }
   next();
 });
 

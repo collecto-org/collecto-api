@@ -73,14 +73,15 @@ export const getUserAdverts = async (req, res, next) => {
       .populate('condition')
       .populate('brand');
 
-    const totalAdverts = await Advert.countDocuments(query);
+    const total = await Advert.countDocuments(query);
 
     if (!adverts.length) {
       return res.status(404).json({ message: 'No se encontraron anuncios para este usuario' });
     }
 
-    if (req.user) {
-      const favorites = req.user.favorites.map(id => id.toString());
+    if (user.favorites) {
+      console.log(req)
+      const favorites = user.favorites.map(id => id.toString());
 
       const advertsWithFavStatus = adverts.map(advert => ({
         ...advert.toObject(),
@@ -89,7 +90,7 @@ export const getUserAdverts = async (req, res, next) => {
       }));
 
       return res.status(200).json({
-        total: totalAdverts,
+        total: total,
         adverts: advertsWithFavStatus,
       });
     }
@@ -100,7 +101,7 @@ export const getUserAdverts = async (req, res, next) => {
     }));
 
     res.status(200).json({
-      total: totalAdverts,
+      total: total,
       adverts: advertsWithoutFavStatus,
     });
 
@@ -119,7 +120,14 @@ export const getCurrentUser = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    const user = await User.findById(userId).select('-passwordHash');
+    const user = await User.findById(userId)
+      .select('-passwordHash')
+      .populate('gender')
+      .populate('direccionId')
+      .populate({
+        path: 'favorites',
+        select: 'title price mainImage',
+      });
 
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -141,7 +149,7 @@ export const getCurrentUser = async (req, res, next) => {
     });
   } catch (err) {
    // next(err);
-   logDetailedError(err, req, 'getCurrentUser');
+    logDetailedError(err, req, 'getCurrentUser');
     res.status(500).json({ message: 'Error al obtener los datos del usuario', error: err.message });
   }
 };
@@ -227,6 +235,15 @@ export const editUserProfile = async (req, res, next) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
+    // Validar que el nuevo email no esté ya en uso por otro usuario         (Añadido por Lucas como verificación adicional de que el email no exista ya, independientemente del nuevo endpoint que he creado después de este)
+    if (dataToUpdate.email && dataToUpdate.email.toLowerCase() !== user.email.toLowerCase()) {
+      const existingUser = await User.findOne({ email: dataToUpdate.email.toLowerCase() });
+
+      if (existingUser) {
+        return res.status(400).json({ message: 'El email ya está en uso por otro usuario' });
+      }
+    }
+
     if (user.avatarUrl && avatarUrl && avatarUrl !== user.avatarUrl) {
       const publicId = extractPublicId(user.avatarUrl);
       if (publicId) {
@@ -245,6 +262,27 @@ export const editUserProfile = async (req, res, next) => {
     res.status(500).json({ message: 'Error al actualizar el perfil', error: err.message });
   }
 };
+
+
+// Endpoint para verificar si un email ya existe en la base de datos
+export const checkEmailExists = async (req, res) => {
+  const { email } = req.body; // El frontend debe mandar { email: 'nuevo@email.com' }
+
+  if (!email) {
+    return res.status(400).json({ exists: false, message: 'Email no proporcionado' });
+  }
+
+  try {
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+
+    res.status(200).json({ exists: !!existingUser });
+  } catch (err) {
+    console.error('Error comprobando email:', err);
+    res.status(500).json({ exists: false, message: 'Error comprobando el email' });
+  }
+};
+
+
 
 // Eliminar el perfil del usuario
 export const deleteUserProfile = async (req, res, next) => {
@@ -336,14 +374,14 @@ export const getOwnAdverts = async (req, res, next) => {
       .populate('condition')
       .populate('brand');
 
-    const totalAdverts = await Advert.countDocuments(query);
+    const total = await Advert.countDocuments(query);
 
     if (!adverts.length) {
       return res.status(404).json({ message: 'No tienes anuncios publicados.' });
     }
 
     res.status(200).json({
-      totalAdverts,
+      total,
       adverts,
     });
   } catch (err) {
@@ -422,14 +460,15 @@ export const getUserFavorites = async (req, res, next) => {
       .populate('condition')
       .populate('brand');
 
-    const totalFavorites = await Advert.countDocuments(query);
+    const total = await Advert.countDocuments(query);
 
     if (!adverts.length) {
       return res.status(404).json({ message: 'No se encontraron anuncios favoritos que coincidan con los filtros.' });
     }
 
-    if (req.user) {
-      const favorites = req.user.favorites.map(id => id.toString());
+    if (user.favorites) {
+      console.log(req)
+      const favorites = user.favorites.map(id => id.toString());
 
       const advertsWithFavStatus = adverts.map(advert => ({
         ...advert.toObject(),
@@ -438,7 +477,7 @@ export const getUserFavorites = async (req, res, next) => {
       }));
 
       return res.status(200).json({
-        total: totalFavorites,
+        total: total,
         adverts: advertsWithFavStatus,
       });
     }
@@ -449,13 +488,13 @@ export const getUserFavorites = async (req, res, next) => {
     }));
 
     res.status(200).json({
-      total: totalFavorites,
+      total: total,
       adverts: advertsWithoutFavStatus,
     });
 
   } catch (err) {
    // next(err);
-   logDetailedError(err, req, 'getUserFavorites');
+    logDetailedError(err, req, 'getUserFavorites');
     res.status(500).json({ message: 'Error al obtener los anuncios favoritos', error: err.message });
   }
 };

@@ -531,13 +531,12 @@ export const editAdvert = async (req, res, next) => {
 
   const bodyImages = req.body.imagesUrl;
   
-  // Si `bodyImages` es un array, lo añades directamente
   if (Array.isArray(bodyImages)) {
     bodyImages.forEach(image => {
-      newImages.push(image); // Agrega cada imagen del array individualmente
+      newImages.push(image);
     });
   } else if (typeof bodyImages === "string") {
-    newImages.push(bodyImages); // Si es un string, lo agregas directamente
+    newImages.push(bodyImages);
   } else {
     console.log("El tipo de bodyImages no es válido");
   }
@@ -562,6 +561,11 @@ export const editAdvert = async (req, res, next) => {
 
     if (advert.user.toString() !== req.user.id) {
       return res.status(403).json({ message: 'No tienes permiso para editar este anuncio.' });
+    }
+
+    // Validar máximo 6 imágenes <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    if (newImages.length > 6) {
+      return res.status(400).json({ message: 'No puedes subir más de 6 imágenes en un anuncio.' });
     }
 
     const imagesToDelete = Array.isArray(advert.images) && Array.isArray(newImages)
