@@ -1,4 +1,5 @@
 import ShippingMethod from '../models/shippingMethod.js';
+import { logDetailedError } from '../utils/logger.js';
 
 // Ver los métodos de envío disponibles
 export const getAllShippingMethods = async (req, res, next) => {
@@ -11,7 +12,8 @@ export const getAllShippingMethods = async (req, res, next) => {
 
     res.status(200).json(shippingMethods);
   } catch (err) {
-    next(err);
+    //next(err);
+     logDetailedError(err, req, 'getAllShippingMethods');
     res.status(500).json({ message: 'Error al obtener los métodos de envío', error: err.message });
   }
 };
@@ -31,7 +33,8 @@ export const createShippingMethod = async (req, res, next) => {
 
     res.status(201).json(newMethod);
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'createShippingMethod');
     res.status(500).json({ message: 'Error al crear el método de envío', error: err.message });
   }
 };
@@ -54,7 +57,8 @@ export const updateShippingMethod = async (req, res, next) => {
 
     res.status(200).json(updatedMethod);
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'deleteShippingMethod');
     res.status(500).json({ message: 'Error al actualizar el método de envío', error: err.message });
   }
 };
@@ -71,7 +75,8 @@ export const deleteShippingMethod = async (req, res, next) => {
 
     res.status(200).json({ message: 'Método de envío eliminado.' });
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'deleteShippingMethod');
     res.status(500).json({ message: 'Error al eliminar el método de envío', error: err.message });
   }
 };

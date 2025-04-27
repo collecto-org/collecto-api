@@ -1,4 +1,5 @@
 import ProductType from '../models/productType.js';
+import { logDetailedError } from '../utils/logger.js';
 
 //Ver los tipos de productos disponibles
 export const getAllProductTypes = async (req, res, next) => {
@@ -13,7 +14,8 @@ export const getAllProductTypes = async (req, res, next) => {
 
     res.status(200).json(productTypes);
   } catch (err) {
-    next(err);
+    //next(err);
+     logDetailedError(err, req, 'getAllProductTypes');
     res.status(500).json({ message: 'Error al obtener los tipos de productos', error: err.message });
   }
 };
@@ -33,7 +35,8 @@ export const createProductType = async (req, res, next) => {
 
     res.status(201).json(newProductType);
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'createProductType');
     res.status(500).json({ message: 'Error al crear el tipo de producto', error: err.message });
   }
 };
@@ -56,7 +59,8 @@ export const updateProductType = async (req, res, next) => {
 
     res.status(200).json(updatedProductType);
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'updateProductType');
     res.status(500).json({ message: 'Error al actualizar el tipo de producto', error: err.message });
   }
 };
@@ -73,7 +77,8 @@ export const deleteProductType = async (req, res, next) => {
 
     res.status(200).json({ message: 'Tipo de producto eliminado.' });
   } catch (err) {
-    next(err);
+   // next(err);
+    logDetailedError(err, req, 'deleteProductType');
     res.status(500).json({ message: 'Error al eliminar el tipo de producto', error: err.message });
   }
 };

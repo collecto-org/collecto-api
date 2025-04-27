@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
 import streamifier from 'streamifier';
+import { logDetailedError } from '../utils/logger.js';
 
 const storage = multer.memoryStorage();
 
@@ -21,20 +22,36 @@ export const uploadAvatarToCloudinary = async (req, res, next) => {
       if (err) {
         return res.status(400).json({ message: 'Error al subir el avatar', error: err.message });
       }
-
-      if (req.file) {
-        const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: 'avatars',
-        });
-
-        req.body.avatarUrl = result.secure_url;
-      } else {
+      
+      if (!req.file) {
         return res.status(400).json({ message: 'No se ha proporcionado una imagen para el avatar' });
       }
+      const uploadFromBuffer = (fileBuffer) => {
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder: 'avatars',
+              resource_type: 'image',
+            },
+            (error, result) => {
+              if (error) return reject(error);
+              resolve(result);
+            }
+          );
+
+          streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+        });
+      };
+
+      const result = await uploadFromBuffer(req.file.buffer);
+
+      req.body.avatarUrl = result.secure_url;
 
       next();
     });
+
   } catch (err) {
+    logDetailedError(err, req, 'uploadAvatarToCloudinary');
     res.status(500).json({ message: 'Error al procesar la subida del avatar', error: err.message });
   }
 };

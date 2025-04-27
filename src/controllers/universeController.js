@@ -1,4 +1,5 @@
 import Universe from '../models/universe.js';
+import { logDetailedError } from '../utils/logger.js';
 
 // Ver los universos disponibles
 export const getAllUniverses = async (req, res, next) => {
@@ -13,7 +14,8 @@ export const getAllUniverses = async (req, res, next) => {
 
     res.status(200).json(universes);
   } catch (err) {
-    next(err);
+        //next(err);
+    logDetailedError(err, req, 'getUserAdverts');
     res.status(500).json({ message: 'Error al obtener los universos', error: err.message });
   }
 };
@@ -33,7 +35,8 @@ export const createUniverse = async (req, res, next) => {
 
     res.status(201).json(universe);
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'createUniverse');
     res.status(500).json({ message: 'Error al crear el universo', error: err.message });
   }
 };
@@ -56,7 +59,8 @@ export const updateUniverse = async (req, res, next) => {
 
     res.status(200).json(updated);
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'updateUniverse');
     res.status(500).json({ message: 'Error al actualizar el universo', error: err.message });
   }
 };
@@ -73,7 +77,8 @@ export const deleteUniverse = async (req, res, next) => {
 
     res.status(200).json({ message: 'Universo eliminado.' });
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'deleteUniverse');
     res.status(500).json({ message: 'Error al eliminar el universo', error: err.message });
   }
 };

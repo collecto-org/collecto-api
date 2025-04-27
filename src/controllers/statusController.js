@@ -1,4 +1,5 @@
 import Status from '../models/status.js';
+import { logDetailedError } from '../utils/logger.js';
 
 // Ver los estados disponibles
 export const getAllStatuses = async (req, res, next) => {
@@ -13,7 +14,8 @@ export const getAllStatuses = async (req, res, next) => {
 
     res.status(200).json(statuses);
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'getAllStatuses');
     res.status(500).json({ message: 'Error al obtener los estados', error: err.message });
   }
 };
@@ -33,7 +35,8 @@ export const createStatus = async (req, res, next) => {
 
     res.status(201).json(newStatus);
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'createStatus');
     res.status(500).json({ message: 'Error al crear el estado', error: err.message });
   }
 };
@@ -56,7 +59,8 @@ export const updateStatus = async (req, res, next) => {
 
     res.status(200).json(updatedStatus);
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'updateStatus');
     res.status(500).json({ message: 'Error al actualizar el estado', error: err.message });
   }
 };
@@ -73,7 +77,8 @@ export const deleteStatus = async (req, res, next) => {
 
     res.status(200).json({ message: 'Estado eliminado.' });
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'updatedeleteStatusStatus');
     res.status(500).json({ message: 'Error al eliminar el estado', error: err.message });
   }
 };

@@ -4,6 +4,7 @@ import Chat from '../models/chat.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { notifyNewMessage } from './notificationController.js';
 import { extractPublicId } from '../utils/upload.js';
+import { logDetailedError } from '../utils/logger.js';
 
 
 
@@ -104,7 +105,8 @@ export const getUserAdverts = async (req, res, next) => {
     });
 
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'getUserAdverts');
     res.status(500).json({ message: 'Error al obtener los anuncios del usuario', error: err.message });
   }
 };
@@ -130,28 +132,80 @@ export const getCurrentUser = async (req, res, next) => {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
       phone: user.phone,
       location: user.location,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
     });
   } catch (err) {
-    next(err);
+   // next(err);
+   logDetailedError(err, req, 'getCurrentUser');
     res.status(500).json({ message: 'Error al obtener los datos del usuario', error: err.message });
   }
 };
 
 
 // Editar perfil del usuario
+// export const editUserProfile = async (req, res, next) => {
+//   const userId = req.user.id;
+//   const updatedData = req.body;
+
+//   let avatarUrl;
+
+//   if (Array.isArray(req.body.imageUrls) && req.body.imageUrls.length > 0) {
+//     avatarUrl = req.body.imageUrls[0];
+//   }
+
+//   const allowedFields = ['email', 'firstName', 'lastName', 'dateOfBirth', 'phone', 'location', 'bio'];
+//   const dataToUpdate = {};
+
+//   Object.keys(updatedData).forEach((field) => {
+//     if (allowedFields.includes(field)) {
+//       dataToUpdate[field] = updatedData[field];
+//     }
+//   });
+
+//   if (avatarUrl) {
+//     dataToUpdate.avatarUrl = avatarUrl;
+//   }
+
+//   try {
+//     const user = await User.findById(userId);
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'Usuario no encontrado' });
+//     }
+
+//     if (user.avatarUrl && avatarUrl && avatarUrl !== user.avatarUrl) {
+//       const publicId = extractPublicId(user.avatarUrl);
+//       if (publicId) {
+//         await cloudinary.uploader.destroy(publicId);
+//       } else {
+//         console.warn(`No se pudo extraer el public_id del avatar anterior: ${user.avatarUrl}`);
+//       }
+//     }
+
+//     const updatedUser = await User.findByIdAndUpdate(userId, dataToUpdate, { new: true });
+
+//     res.status(200).json({
+//       message: 'Perfil actualizado correctamente',
+//       user: updatedUser,
+//     });
+//   } catch (err) {
+//    // next(err);
+//     logDetailedError(err, req, 'editUserProfile');
+//     res.status(500).json({ message: 'Error al actualizar el perfil', error: err.message });
+//   }
+// };
+
+//nuevo proceso apra editar el usuario
 export const editUserProfile = async (req, res, next) => {
   const userId = req.user.id;
   const updatedData = req.body;
 
-  let avatarUrl;
-
-  if (Array.isArray(req.body.imageUrls) && req.body.imageUrls.length > 0) {
-    avatarUrl = req.body.imageUrls[0];
-  }
+  const avatarUrl = updatedData.avatarUrl;  // 🔥 directo, no buscar en imageUrls
 
   const allowedFields = ['email', 'firstName', 'lastName', 'dateOfBirth', 'phone', 'location', 'bio'];
   const dataToUpdate = {};
@@ -177,8 +231,6 @@ export const editUserProfile = async (req, res, next) => {
       const publicId = extractPublicId(user.avatarUrl);
       if (publicId) {
         await cloudinary.uploader.destroy(publicId);
-      } else {
-        console.warn(`No se pudo extraer el public_id del avatar anterior: ${user.avatarUrl}`);
       }
     }
 
@@ -189,12 +241,10 @@ export const editUserProfile = async (req, res, next) => {
       user: updatedUser,
     });
   } catch (err) {
-    next(err);
+    logDetailedError(err, req, 'editUserProfile');
     res.status(500).json({ message: 'Error al actualizar el perfil', error: err.message });
   }
 };
-
-
 
 // Eliminar el perfil del usuario
 export const deleteUserProfile = async (req, res, next) => {
@@ -220,7 +270,8 @@ export const deleteUserProfile = async (req, res, next) => {
 
     res.status(200).json({ message: 'Cuenta eliminada' });
   } catch (err) {
-    next(err);
+   // next(err);
+    logDetailedError(err, req, 'deleteUserProfile');
     res.status(500).json({ message: 'Error al eliminar el perfil', error: err.message });
   }
 };
@@ -296,7 +347,8 @@ export const getOwnAdverts = async (req, res, next) => {
       adverts,
     });
   } catch (err) {
-    next(err);
+    //next(err);
+    logDetailedError(err, req, 'getOwnAdverts');
     res.status(500).json({ message: 'Error al obtener los anuncios', error: err.message });
   }
 };
@@ -402,7 +454,8 @@ export const getUserFavorites = async (req, res, next) => {
     });
 
   } catch (err) {
-    next(err);
+   // next(err);
+   logDetailedError(err, req, 'getUserFavorites');
     res.status(500).json({ message: 'Error al obtener los anuncios favoritos', error: err.message });
   }
 };
@@ -431,7 +484,8 @@ export const addFavorite = async (req, res, next) => {
 
     res.status(201).json({ message: 'Añadido a favoritos' });
   } catch (err) {
-    next(err);
+ //   next(err);
+    logDetailedError(err, req, 'addFavorite');
     res.status(500).json({ message: 'Error al agregar favorito', error: err.message });
   }
 };
@@ -458,7 +512,8 @@ export const removeFavorite = async (req, res, next) => {
 
     res.status(200).json({ message: 'Eliminado de favoritos' });
   } catch (err) {
-    next(err);
+   // next(err);
+    logDetailedError(err, req, 'removeFavorite');
     res.status(500).json({ message: 'Error al eliminar favorito', error: err.message });
   }
 };
@@ -709,7 +764,8 @@ export const createChat = async (req, res, next) => {
 
     res.status(201).json({ chatId: chat.id });
   } catch (err) {
-    next(err);
+  //  next(err);
+    logDetailedError(err, req, 'createChat');
     res.status(500).json({ message: 'Error al crear la conversación', error: err.message });
   }
 };
@@ -754,7 +810,8 @@ export const sendMessageToChat = async (req, res, next) => {
 
     res.status(201).json({ message: 'Mensaje enviado' });
   } catch (err) {
-    next(err);
+   // next(err);
+     logDetailedError(err, req, 'sendMessageToChat');
     res.status(500).json({ message: 'Error al enviar mensaje', error: err.message });
   }
 };
@@ -792,7 +849,8 @@ export const getUserChats = async (req, res, next) => {
 
     res.status(200).json(chatPreviews);
   } catch (err) {
-    next(err);
+   // next(err);
+   logDetailedError(err, req, 'getUserChats');
     res.status(500).json({ message: 'Error al obtener las conversaciones', error: err.message });
   }
 };
@@ -828,7 +886,8 @@ export const getChatMessages = async (req, res, next) => {
 
     res.status(200).json(messages);
   } catch (err) {
-    next(err);
+   // next(err);
+    logDetailedError(err, req, 'getChatMessages');
     res.status(500).json({ message: 'Error al obtener los mensajes del chat', error: err.message });
   }
 };
