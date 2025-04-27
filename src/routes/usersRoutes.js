@@ -7,6 +7,7 @@ import {
   getUserAdverts,
   getCurrentUser,
   editUserProfile,
+  checkEmailExists,
   deleteUserProfile,
   getOwnAdverts,
   getUserFavorites,
@@ -35,6 +36,7 @@ router.get('/:username/listings', getUserAdverts); // Ver anuncios de un usuario
 router.get('/me', verifyToken, loadUserIfAuthenticated, getCurrentUser); // Obtener datos del propio usuario
 
 router.put('/me', verifyToken, loadUserIfAuthenticated, uploadAvatarToCloudinary, editUserProfile); // Editar perfil del usuario
+router.post('/me/check-email', verifyToken, loadUserIfAuthenticated, checkEmailExists); // Verificar si un email existe
 
 router.delete('/me', verifyToken, loadUserIfAuthenticated, deleteUserProfile); // Eliminar perfil del usuario
 router.get('/me/adverts', verifyToken, loadUserIfAuthenticated, getOwnAdverts); // Ver anuncios de uno mismo
