@@ -2,6 +2,7 @@ import Notification from '../models/notification.js';
 import NotificationType from '../models/notificationTypes.js';
 import User from '../models/user.js';
 import Advert from '../models/advert.js';
+import Status from '../models/status.js';
 
 
 
@@ -14,10 +15,12 @@ export const getUserNotifications = async (req, res, next) => {
       .populate('advertId', 'title') // para mostrar el título del anuncio
       .sort({ createdAt: -1 }); // las más recientes primero
 
+      console.log("llega")
+
+
     res.status(200).json(notifications);
   } catch (err) {
     console.error('Error al obtener notificaciones:', err.message);
-    next(err);
     res.status(500).json({ message: 'Error al obtener las notificaciones', error: err.message });
   }
 };
@@ -28,6 +31,7 @@ export const markNotificationAsRead = async (req, res, next) => {
 
   try {
     const notification = await Notification.findOne({ _id: id, user: userId });
+
 
     if (!notification) {
       return res.status(404).json({ message: 'Notificación no encontrada o no te pertenece.' });
@@ -42,22 +46,21 @@ export const markNotificationAsRead = async (req, res, next) => {
 
     res.status(200).json({ message: 'Notificación marcada como leída.', notification });
   } catch (err) {
-    next(err);
     res.status(500).json({ message: 'Error al marcar la notificación como leída.', error: err.message });
   }
 };
 
 
 
-export const notifyStatusChange = async (advertId, statusCode) => {
+export const notifyStatusChange = async (advert) => {
   try {
-    const advert = await Advert.findById(advertId).populate('user');
-    if (!advert) throw new Error('Anuncio no encontrado.');
+    console.log(advert)
 
-    const users = await User.find({ favorites: advertId });
+
+    const users = await User.find({ favorites: advert._id });
     if (!users.length) return;
-
-    const notificationType = await NotificationType.findOne({ code: statusCode });
+    const status = await Status.findById(advert.status)
+    const notificationType = await NotificationType.findOne({ code: status.code });
     if (!notificationType) throw new Error('Tipo de notificación no encontrado.');
 
     const messageTemplate = notificationType.template;
@@ -91,6 +94,8 @@ export const notifyPriceChange = async (advert) => {
     const message = messageTemplate
       .replace('{title}', advert.title)
       .replace('{price}', advert.price.toFixed(2));
+
+      console.log(advert)
 
     const notifications = users.map(user => ({
       user: user._id,

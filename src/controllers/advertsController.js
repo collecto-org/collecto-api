@@ -530,7 +530,6 @@ export const editAdvert = async (req, res, next) => {
   let newImages = Array.isArray(req.body.imageUrls) ? req.body.imageUrls : [];
 
   const bodyImages = req.body.imagesUrl;
-  console.log(typeof bodyImages);
   
   // Si `bodyImages` es un array, lo añades directamente
   if (Array.isArray(bodyImages)) {
@@ -543,7 +542,6 @@ export const editAdvert = async (req, res, next) => {
     console.log("El tipo de bodyImages no es válido");
   }
   
-  console.log("newImages:", newImages);
 
   try {
     const advert = await Advert.findById(id);
@@ -553,6 +551,10 @@ export const editAdvert = async (req, res, next) => {
     }
 
     const oldPrice = advert.price;
+    const oldStatus = advert.status
+   
+
+
 
     if (advert.status === 'vendido') {
       return res.status(400).json({ message: 'No se puede editar un anuncio ya vendido.' });
@@ -599,10 +601,13 @@ export const editAdvert = async (req, res, next) => {
     await advert.save();
 
     // Notificar a los usuarios que lo tenían en favoritos
-    if (price && price !== oldPrice) {                                      //////////////////////////////////
+    if (price && Number(price) !== oldPrice) {                                      //////////////////////////////////
       await notifyPriceChange(advert);                                      /////////////////////////////////////// 
     }                                                                       ///////////////////////////////////////
-
+    if( advert.status.toString() !== oldStatus.toString()){
+      await notifyStatusChange(advert)
+    }
+    
     res.status(200).json({
       message: 'Anuncio actualizado',
       advert,
