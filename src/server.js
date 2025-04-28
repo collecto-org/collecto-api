@@ -20,6 +20,8 @@ import shippingMethodRoutes from './routes/shippingMethodRoutes.js';
 import shipmentTrackingRoutes from './routes/shipmentTrackingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import addressRoutes from './routes/addressRoutes.js';
+import genderRoutes from './routes/genderRoutes.js';
+import userRoutes from './routes/tableRoutes/userRoutes.js';
 
 
 import cookieParser from 'cookie-parser';
@@ -67,6 +69,9 @@ app.use('/api/transactions', transactionRoutes); // Transacciones de pago
 app.use('/api/shippingMethods', shippingMethodRoutes); // Métodos de envío
 app.use('/api/shipmentTracking', shipmentTrackingRoutes); // Tracking de envíos
 app.use('/api/address', addressRoutes); // Direcciones
+app.use('/api/genders', genderRoutes); // Generos
+app.use('/api', userRoutes); // tabla de usuarios
+
 
 
 // Ruta básica de prueba

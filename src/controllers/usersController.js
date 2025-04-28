@@ -141,7 +141,11 @@ export const getCurrentUser = async (req, res, next) => {
       firstName: user.firstName,
       lastName: user.lastName,
       dateOfBirth: user.dateOfBirth,
-      gender: user.gender,
+      gender: user.gender ? {
+        _id: user.gender._id,
+        label: user.gender.label,
+        code: user.gender.code
+      } : null,
       phone: user.phone,
       location: user.location,
       avatarUrl: user.avatarUrl,
@@ -215,7 +219,7 @@ export const editUserProfile = async (req, res, next) => {
 
   const avatarUrl = updatedData.avatarUrl;  // 🔥 directo, no buscar en imageUrls
 
-  const allowedFields = ['email', 'firstName', 'lastName', 'dateOfBirth', 'phone', 'location', 'bio'];
+  const allowedFields = ['email', 'firstName', 'lastName', 'dateOfBirth', 'phone', 'location', 'bio', 'gender'];
   const dataToUpdate = {};
 
   Object.keys(updatedData).forEach((field) => {
@@ -242,6 +246,7 @@ export const editUserProfile = async (req, res, next) => {
       if (existingUser) {
         return res.status(400).json({ message: 'El email ya está en uso por otro usuario' });
       }
+      dataToUpdate.emailVerified = false;
     }
 
     if (user.avatarUrl && avatarUrl && avatarUrl !== user.avatarUrl) {
@@ -252,6 +257,11 @@ export const editUserProfile = async (req, res, next) => {
     }
 
     const updatedUser = await User.findByIdAndUpdate(userId, dataToUpdate, { new: true });
+    
+    if (dataToUpdate.email && dataToUpdate.email.toLowerCase() !== user.email.toLowerCase()) {
+      await sendVerificationEmail(updatedUser);
+    }
+    
 
     res.status(200).json({
       message: 'Perfil actualizado correctamente',
@@ -931,3 +941,44 @@ export const getChatMessages = async (req, res, next) => {
   }
 };
 
+import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
+
+export const sendVerificationEmail = async (user) => {
+  if (!user || !user.email) {
+    throw new Error('Usuario o email no proporcionado');
+  }
+
+  // Generar un nuevo token de verificación
+  const emailVerificationToken = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+
+  // Configurar transporte de correo
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  // Opciones de correo
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: user.email,
+    subject: 'Verificación de correo electrónico',
+    html: `
+      <p>Has cambiado tu correo electrónico. Verifica tu nuevo correo haciendo clic en el siguiente enlace:</p>
+      <a href="${process.env.FRONTEND_URL}/verify-email/${emailVerificationToken}">Verificar mi correo</a>
+    `,
+  };
+
+  // Enviar correo
+  await transporter.sendMail(mailOptions);
+};
