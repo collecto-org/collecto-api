@@ -871,6 +871,7 @@ export const sendMessageToChat = async (req, res, next) => {
 // Obtener todas las conversaciones del usuario
 export const getUserChats = async (req, res, next) => {
   const userId = req.user.id;
+  console.log("eeeeeeeee")
 
   try {
     // Buscar todos los chats
@@ -888,7 +889,7 @@ export const getUserChats = async (req, res, next) => {
       const lastMessage = chat.messages[chat.messages.length - 1];
       const previewMessage = lastMessage ? `${lastMessage.content.substring(0, 30)}...` : 'No hay mensajes aún';
       return {
-        chatId: chat._id,
+        roomId: chat.roomId,
         advertTitle: chat.advertId.title,
         participants: chat.users.map(user => user.username),
         lastMessage: previewMessage,

@@ -14,7 +14,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "cross-env NODEAPP_ENV=production node server.js",
     "dev": "cross-env DEBUG=nodeapp:* NODEAPP_ENV=development nodemon src/server.js",
-"initDB": "cross-env DEBUG=nodeapp:* NODEAPP_ENV=development node src/initDb.js"
+    "initDB": "cross-env DEBUG=nodeapp:* NODEAPP_ENV=development node src/initDb.js"
   },
   "dependencies": {
     "amqplib": "^0.10.7",
