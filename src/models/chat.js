@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const chatSchema = new mongoose.Schema({
   advertId: { type: mongoose.Schema.Types.ObjectId, ref: 'Advert', required: true },
+  roomId:{ type: String, required: true },
   users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }], //Array de users
   messages: [{
     sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -28,6 +29,7 @@ chatSchema.methods.toJSON = function() {
   return chat;
 };
 
+const Chat = mongoose.model('Chat', chatSchema);
 
+export default Chat
 
-export default mongoose.model('Chat', chatSchema);
