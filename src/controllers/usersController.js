@@ -822,7 +822,7 @@ export const createChat = async (req, res, next) => {
 
 
 // Enviar mensaje en un chat ///////////////////////////////////////////////////////////////////////////////////////
-export const sendMessageToChat = async (req, res, next) => {
+export const sendMessageToChat = async (req, res, next, io, connectedUsers) => {
   const { chatId } = req.params;
   const { content } = req.body;
   const senderId = req.user.id;
@@ -854,13 +854,13 @@ export const sendMessageToChat = async (req, res, next) => {
         advertId: chat.advertId,/////////////////////////////////
         senderId,////////////////////////////////////////
         recipientId: receiver._id, ////////////////////////////////////////
-      });
+      }, io, connectedUsers);
     }
 
     res.status(201).json({ message: 'Mensaje enviado' });
   } catch (err) {
    // next(err);
-     logDetailedError(err, req, 'sendMessageToChat');
+      logDetailedError(err, req, 'sendMessageToChat');
     res.status(500).json({ message: 'Error al enviar mensaje', error: err.message });
   }
 };
