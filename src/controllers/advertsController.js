@@ -116,6 +116,46 @@ export const getAdvertBySlug = async (req, res, next) => {
   }
 };
 
+export const getAdvertById = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+console.log(id)
+    const advert = await Advert.findById(id)
+    .populate('transaction')
+    .populate('status')
+    .populate('product_type')
+    .populate('universe')
+    .populate('condition')
+    .populate('brand')
+    .populate('user'); 
+
+    if (!advert) {
+      return res.status(404).json({ message: 'Anuncio no encontrado' });
+    }
+
+    const advertWithImages = {
+      ...advert.toObject(),
+      images: advert.images.map(imagePath => 
+        cloudinary.url(imagePath, { fetch_format: 'auto', quality: 'auto' })
+      ),
+    };
+
+    if (req.user) {
+      const userId = req.user.id; 
+      const user = await User.findById(userId);
+      const favorites = user.favorites.map(id => id.toString()); 
+
+      const isFavorite = favorites.includes(advert._id.toString());
+      advertWithImages.isFavorite = isFavorite;
+    }
+
+    res.status(200).json(advertWithImages);
+  } catch (err) {
+    next(err);
+    res.status(500).json({ message: 'Error al obtener el anuncio', error: err.message });
+  }
+};
+
 
 export const getAdvertOGView = async (req, res, next) => {
   const { slug } = req.params;
