@@ -36,6 +36,8 @@ import User from "./models/user.js";
 import Advert from "./models/advert.js";
 import Chat from "./models/chat.js";
 
+import './services/cronJobs.js'; 
+
 dotenv.config();
 
 // const __filename = fileURLToPath(import.meta.url);
