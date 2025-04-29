@@ -64,7 +64,7 @@ export const notifyStatusChange = async (advert, io, connectedUsers) => {
 
     const messageTemplate = notificationType.template;
     const message = messageTemplate.replace('{title}', advert.title);
-
+    
     for (const user of users) {
       const notification = new Notification({
         user: user._id,
