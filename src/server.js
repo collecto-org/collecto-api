@@ -5,7 +5,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import advertsRoutes from "./routes/advertsRoutes.js";
 import usersRoutes from "./routes/usersRoutes.js";
-import statusRoutes from "./routes/statusRoutes.js"; // Aqui está status
+import statusRoutes from "./routes/statusRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import shipmentRoutes from "./routes/shipmentRoutes.js";
