@@ -61,7 +61,7 @@ router.delete('/me/favorites/:listingId', verifyToken, loadUserIfAuthenticated, 
 router.post('/me/chat/:listingId', verifyToken, loadUserIfAuthenticated, createChat);  // Crear chat relacionado por un anuncio
 router.get('/me/chat/:chatId', verifyToken, loadUserIfAuthenticated, getChatMessages);  // Ver un chat en particular
 router.get('/me/chat', verifyToken, loadUserIfAuthenticated, getUserChats);  // Ver todas las conversaciones
-router.post('/me/chat/message/:chatId', verifyToken, loadUserIfAuthenticated, sendMessageToChat);  // Mandar mensaje en un chat
+router.post('/me/chat/message/:chatId', verifyToken, loadUserIfAuthenticated, (req, res, next) => sendMessageToChat(req, res, next, req.app.get('io'), req.app.get('connectedUsers')));  // Mandar mensaje en un chat
 
 
 

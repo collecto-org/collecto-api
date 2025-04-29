@@ -359,7 +359,7 @@ export const searchAdverts = async (req, res, next) => {
 
 
 // Actualizar estado y visibilidad //////////////////////////////////////////////////////////////////////////////////////////////////////
-export const updateAdvertStatus = async (req, res, next) => {
+export const updateAdvertStatus = async (req, res, next, io, connectedUsers) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -381,7 +381,7 @@ export const updateAdvertStatus = async (req, res, next) => {
     await advert.save();
 
     // Notificar a los usuarios que lo tenían en favoritos                 ////////////////////////////////////////
-    await notifyStatusChange(advert._id, status);
+    await notifyStatusChange(advert._id, status, io, connectedUsers);
 
     res.status(200).json({
       message: `Estado actualizado a ${status} y visibilidad ajustada.`,
@@ -510,7 +510,7 @@ export const createAdvert = async (req, res, next) => {
 
 
 // Editar un anuncio propio (Endpoint de Gestión de usuario)  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const editAdvert = async (req, res, next) => {
+export const editAdvert = async (req, res, next, io, connectedUsers) => {
   const { id } = req.params;
   const {
     title,
@@ -606,10 +606,10 @@ export const editAdvert = async (req, res, next) => {
 
     // Notificar a los usuarios que lo tenían en favoritos
     if (price && Number(price) !== oldPrice) {                                      //////////////////////////////////
-      await notifyPriceChange(advert);                                      /////////////////////////////////////// 
+      await notifyPriceChange(advert, io, connectedUsers);                                      /////////////////////////////////////// 
     }                                                                       ///////////////////////////////////////
     if( advert.status.toString() !== oldStatus.toString()){
-      await notifyStatusChange(advert)
+      await notifyStatusChange(advert, io, connectedUsers);
     }
     
     res.status(200).json({
@@ -625,7 +625,7 @@ export const editAdvert = async (req, res, next) => {
 
 
 // Borrar anuncio propio (Endpoint de Gestión de usuario) ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const deleteAdvert = async (req, res, next) => {
+export const deleteAdvert = async (req, res, next, io, connectedUsers) => {
   const { id } = req.params;
 
   try {
@@ -635,7 +635,7 @@ export const deleteAdvert = async (req, res, next) => {
     }
 
     // Notificar a los usuarios que lo tenían en favoritos
-    await notifyAdvertDeleted(advert);
+    await notifyAdvertDeleted(advert, io, connectedUsers);
 
     if (advert.images && advert.images.length > 0) {
       for (const imageUrl of advert.images) {

@@ -1,6 +1,10 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import http from 'http';
+import { Server } from 'socket.io';
 
 import authRoutes from './routes/authRoutes.js';
 import advertsRoutes from './routes/advertsRoutes.js';
@@ -24,12 +28,61 @@ import genderRoutes from './routes/genderRoutes.js';
 import userRoutes from './routes/tableRoutes/userRoutes.js';
 
 
-import cookieParser from 'cookie-parser';
-import cors from 'cors';
 // import path from 'path';
 // import { fileURLToPath } from 'url';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+
+
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Añado Socket.IO para gestionar las notificaciones en tiempo real
+// Crear servidor HTTP para usar con Socket.IO
+const server = http.createServer(app);
+
+// Crear instancia de Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:5173', // frontend
+    credentials: true,
+  },
+});
+
+// Mapa de usuarios conectados
+const connectedUsers = new Map();
+
+// Guardar io y connectedUsers en app para poder usarlos en las rutas
+app.set('io', io);
+app.set('connectedUsers', connectedUsers);
+
+// Escuchar conexiones de socket
+io.on('connection', (socket) => {
+  console.log(' Usuario conectado a Socket.IO');
+
+  socket.on('register', (userId) => {
+    if (userId) {
+      connectedUsers.set(userId, socket.id);
+      console.log(` Usuario ${userId} registrado con socket ${socket.id}`);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    for (const [userId, socketId] of connectedUsers.entries()) {
+      if (socketId === socket.id) {
+        connectedUsers.delete(userId);
+        console.log(` Usuario ${userId} desconectado`);
+        break;
+      }
+    }
+  });
+});
+
+
+
+
+
 
 dotenv.config();
 
@@ -37,8 +90,7 @@ dotenv.config();
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+
 
 // Conexión a la base de datos
 connectDB();
@@ -84,8 +136,6 @@ const swaggerDocument = YAML.load('./swagger.yaml'); // Cargar el archivo YAML d
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument)); // Configurar Swagger UI
 
 
-// Arrancar servidor
-app.listen(PORT, () => {console.log(`Servidor escuchando en http://localhost:${PORT}`);});
 
 // Mostrar solo errores detallados en entorno de desarrollo
 app.use((err, req, res, next) => {
@@ -104,3 +154,10 @@ app.use((err, req, res, next) => {
       ...(isDev && { error: err.stack }), 
     });
   });
+
+
+// Arrancar servidor HTTP + Socket.IO
+server.listen(PORT, () => {
+  console.log(` Servidor escuchando en http://localhost:${PORT}`);
+});
+

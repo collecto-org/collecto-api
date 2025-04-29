@@ -3,6 +3,7 @@ import NotificationType from '../models/notificationTypes.js';
 import User from '../models/user.js';
 import Advert from '../models/advert.js';
 import Status from '../models/status.js';
+import { sendEmailNotification } from '../utils/emailUtils.js';
 
 
 
@@ -52,29 +53,51 @@ export const markNotificationAsRead = async (req, res, next) => {
 
 
 
-export const notifyStatusChange = async (advert) => {
+export const notifyStatusChange = async (advert, io, connectedUsers) => {
   try {
-    console.log(advert)
-
-
     const users = await User.find({ favorites: advert._id });
     if (!users.length) return;
-    const status = await Status.findById(advert.status)
+
+    const status = await Status.findById(advert.status);
     const notificationType = await NotificationType.findOne({ code: status.code });
     if (!notificationType) throw new Error('Tipo de notificación no encontrado.');
 
     const messageTemplate = notificationType.template;
     const message = messageTemplate.replace('{title}', advert.title);
 
-    const notifications = users.map(user => ({
-      user: user._id,
-      notificationType: notificationType._id,
-      advertId: advert._id,
-      message,
-    }));
+    for (const user of users) {
+      const notification = new Notification({
+        user: user._id,
+        notificationType: notificationType._id,
+        advertId: advert._id,
+        message,
+      });
 
-    await Notification.insertMany(notifications);
-    console.log(`Notificaciones enviadas a ${users.length} usuarios favoritos.`);
+      await notification.save();
+
+      const socketId = connectedUsers.get(user._id.toString());
+
+      if (socketId) {
+        //  Si elñ usuario está conectado: Enviar por Socket.IO
+        io.to(socketId).emit('new-notification', {
+          message,
+          advert: {
+            title: advert.title,
+            slug: advert.slug,
+            image: advert.image,
+          },
+          type: {
+            label: notificationType.label,
+            icon: notificationType.icon,
+          },
+        });
+      } else {
+        // Si el usuario no está conectado: Enviar por email
+        await sendEmailNotification(user.email, message);
+      }
+    }
+
+    console.log(`Notificaciones de estado enviadas a ${users.length} usuarios.`);
   } catch (err) {
     console.error('Error notificando cambio de estado:', err.message);
   }
@@ -82,7 +105,7 @@ export const notifyStatusChange = async (advert) => {
 
 
 
-export const notifyPriceChange = async (advert) => {
+export const notifyPriceChange = async (advert, io, connectedUsers) => {
   try {
     const users = await User.find({ favorites: advert._id });
     if (!users.length) return;
@@ -95,16 +118,36 @@ export const notifyPriceChange = async (advert) => {
       .replace('{title}', advert.title)
       .replace('{price}', advert.price.toFixed(2));
 
-      console.log(advert)
+    for (const user of users) {
+      const notification = new Notification({
+        user: user._id,
+        notificationType: notificationType._id,
+        advertId: advert._id,
+        message,
+      });
 
-    const notifications = users.map(user => ({
-      user: user._id,
-      notificationType: notificationType._id,
-      advertId: advert._id,
-      message,
-    }));
+      await notification.save();
 
-    await Notification.insertMany(notifications);
+      const socketId = connectedUsers.get(user._id.toString());
+
+      if (socketId) {
+        io.to(socketId).emit('new-notification', {
+          message,
+          advert: {
+            title: advert.title,
+            slug: advert.slug,
+            image: advert.image,
+          },
+          type: {
+            label: notificationType.label,
+            icon: notificationType.icon,
+          },
+        });
+      } else {
+        await sendEmailNotification(user.email, message);
+      }
+    }
+
     console.log(`Notificaciones de cambio de precio enviadas a ${users.length} usuarios.`);
   } catch (err) {
     console.error('Error notificando cambio de precio:', err.message);
@@ -113,7 +156,8 @@ export const notifyPriceChange = async (advert) => {
 
 
 
-export const notifyAdvertDeleted = async (advert) => {
+
+export const notifyAdvertDeleted = async (advert, io, connectedUsers) => {
   try {
     const users = await User.find({ favorites: advert._id });
     if (!users.length) return;
@@ -121,17 +165,38 @@ export const notifyAdvertDeleted = async (advert) => {
     const notificationType = await NotificationType.findOne({ code: 'deleted' });
     if (!notificationType) throw new Error('Tipo de notificación "deleted" no encontrado.');
 
-    const message = notificationType.template
-      .replace('{title}', advert.title);
+    const message = notificationType.template.replace('{title}', advert.title);
 
-    const notifications = users.map(user => ({
-      user: user._id,
-      notificationType: notificationType._id,
-      advertId: advert._id,
-      message,
-    }));
+    for (const user of users) {
+      const notification = new Notification({
+        user: user._id,
+        notificationType: notificationType._id,
+        advertId: advert._id,
+        message,
+      });
 
-    await Notification.insertMany(notifications);
+      await notification.save();
+
+      const socketId = connectedUsers.get(user._id.toString());
+
+      if (socketId) {
+        io.to(socketId).emit('new-notification', {
+          message,
+          advert: {
+            title: advert.title,
+            slug: advert.slug,
+            image: advert.image,
+          },
+          type: {
+            label: notificationType.label,
+            icon: notificationType.icon,
+          },
+        });
+      } else {
+        await sendEmailNotification(user.email, message);
+      }
+    }
+
     console.log(`Notificaciones de eliminación enviadas a ${users.length} usuarios.`);
   } catch (err) {
     console.error('Error notificando eliminación de anuncio:', err.message);
@@ -139,7 +204,8 @@ export const notifyAdvertDeleted = async (advert) => {
 };
 
 
-export const notifyNewMessage = async ({ advertId, senderId, recipientId }) => {
+
+export const notifyNewMessage = async ({ advertId, senderId, recipientId }, io, connectedUsers) => {
   try {
     const [advert, sender, notificationType] = await Promise.all([
       Advert.findById(advertId),
@@ -163,10 +229,32 @@ export const notifyNewMessage = async ({ advertId, senderId, recipientId }) => {
     });
 
     await notification.save();
+
+    const socketId = connectedUsers.get(recipientId.toString());
+
+    if (socketId) {
+      io.to(socketId).emit('new-notification', {
+        message,
+        advert: {
+          title: advert.title,
+          slug: advert.slug,
+          image: advert.image,
+        },
+        type: {
+          label: notificationType.label,
+          icon: notificationType.icon,
+        },
+      });
+    } else {
+      const recipient = await User.findById(recipientId);
+      if (recipient?.email) {
+        await sendEmailNotification(recipient.email, message);
+      }
+    }
+
     console.log(`Notificación de nuevo mensaje enviada a ${recipientId}.`);
   } catch (err) {
     console.error('Error al crear notificación de mensaje:', err.message);
   }
 };
-
 
