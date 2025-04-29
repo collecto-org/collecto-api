@@ -117,6 +117,6 @@ app.set('io', io);
 app.set('connectedUsers', connectedUsers);
 
 
-server.listen(4000, () => { // servidor de webSockets
+server.listen(process.env.SOCKETS_PORT, () => { // servidor de webSockets
   console.log("servidor de shockets escuchando en http://localhost:4000");
 });

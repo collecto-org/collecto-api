@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 
 
 const connectedUsers = new Map(); 
+const activeUsersInRoom = new Map(); 
 
 export const initSocket = (server) => {
 
@@ -14,7 +15,7 @@ const io = new Server(server, {
     maxDisconnectionDuration: 4000,
   },
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"], 
     credentials: true,
@@ -26,7 +27,21 @@ io.on("connection", (socket) => {
   socket.on("register",async (username) => {
     const user = await User.findOne({username})
     if(user){
-    connectedUsers.set(user.id, socket.id);}    
+    connectedUsers.set(user.id, socket.id);}   
+  });
+  socket.on("active in chat", ({ roomId, user }) => {
+    const set = activeUsersInRoom.get(roomId) || new Set();
+    set.add(user);
+    activeUsersInRoom.set(roomId, set);
+  });
+  socket.on("inactive in chat", ({ roomId, user }) => {
+    const set = activeUsersInRoom.get(roomId);
+    if (set) {
+      set.delete(user);
+      if (set.size === 0) {
+        activeUsersInRoom.delete(roomId);
+      }
+    }
   });
 
   socket.on("joinRoom", async ({ roomId, user }) => {
@@ -35,6 +50,7 @@ io.on("connection", (socket) => {
       const buyer = await User.findOne({ username: buyerUsername });
       const advert = await Advert.findById(advertId);
       const owner = await User.findById(advert.user._id);
+      const currentUser = await User.findOne({ username: user })
 
       let chatRoom = await Chat.findOne({
         advertId,
@@ -56,10 +72,31 @@ io.on("connection", (socket) => {
 
       if (chatRoom) { // Cargar mensajes previos
         await chatRoom.populate("messages.sender", "username");
+        
+        const receiverUser = await User.findById(currentUser);
+        const receiverSocketId = connectedUsers.get(receiverUser._id.toString());
+
+        chatRoom.messages.forEach((msg) => {
+            if (
+              msg.receiver.toString() === currentUser._id.toString() &&
+              !msg.isRead
+            ) {
+              msg.isRead = true;
+              socket.emit("message read", { roomId: chatRoom.roomId, messageIds:msg._id});
+
+              if (receiverSocketId) {
+
+                io.to(receiverSocketId).emit("message read",{ roomId: chatRoom.roomId, messageIds: msg._id.toString() });
+              }
+
+            }
+          });
+          await chatRoom.save();
       
         const formattedMessages = chatRoom.messages.map((msg) => ({
           username: msg.sender.username,
           message: msg.content,
+          isRead: msg.isRead,
         }));
       
         socket.emit("previousMessages", formattedMessages);
@@ -100,18 +137,55 @@ io.on("connection", (socket) => {
         sender = owner._id; // El dueño envio el mensaje
       }
 
+      let receiver
+      if (username === buyer.username) {
+        receiver = owner; 
+      } else {
+        receiver = buyer; 
+      }
+
+
       let chatRoom = await Chat.findOne({
         advertId,
         users: { $all: [buyer.id, owner.id] },
       });
+      const activeUsers = activeUsersInRoom.get(roomId);
+        const receiverIsActive = activeUsers?.has(receiver.username);
 
       if (chatRoom) {
         chatRoom.messages.push({
           sender,
+          receiver:receiver._id,
           content: message,
+          isRead:receiverIsActive |false
         });
-        await chatRoom.save();
+        await (chatRoom).save()
+        const populatedChatRoom = await Chat.findById(chatRoom._id)
+        .populate({
+            path: "messages.sender",
+            select: "username avatarUrl -_id",
+          })
+          .populate({
+            path: "messages.receiver",
+            select: "username -_id",
+          })
+          .populate({
+            path: "users",
+            select: "username avatarUrl -_id", 
+          })
+          .populate({
+            path: "advertId",
+            select: "title "
+          })
+          .lean();
 
+        const receiverUser = await User.findById(receiver);
+        const receiverSocketId = connectedUsers.get(receiverUser._id.toString());
+     
+
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit("chat message", populatedChatRoom);
+        }
         io.to(roomId).emit("chat message", {
           roomId,
           message,
