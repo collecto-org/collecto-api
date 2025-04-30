@@ -76,7 +76,7 @@ export const getUserAdverts = async (req, res, next) => {
     const total = await Advert.countDocuments(query);
 
     if (!adverts.length) {
-      return res.status(404).json({ message: 'No se encontraron anuncios para este usuario' });
+      return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total });
     }
 
     if (user.favorites) {
@@ -387,7 +387,7 @@ export const getOwnAdverts = async (req, res, next) => {
     const total = await Advert.countDocuments(query);
 
     if (!adverts.length) {
-      return res.status(404).json({ message: 'No tienes anuncios publicados.' });
+      return res.status(200).json({ message: 'No tienes anuncios publicados.', adverts: [], total });
     }
 
     res.status(200).json({
@@ -429,7 +429,7 @@ export const getUserFavorites = async (req, res, next) => {
     const user = await User.findById(userId);
 
     if (!user || !user.favorites || user.favorites.length === 0) {
-      return res.status(404).json({ message: 'No tienes anuncios favoritos.' });
+      return res.status(200).json({ message: 'No tienes anuncios favoritos.', adverts: [], total: 0 });
     }
 
 
@@ -473,7 +473,7 @@ export const getUserFavorites = async (req, res, next) => {
     const total = await Advert.countDocuments(query);
 
     if (!adverts.length) {
-      return res.status(404).json({ message: 'No se encontraron anuncios favoritos que coincidan con los filtros.' });
+      return res.status(200).json({ message: 'No se encontraron favoritos que coincidan con los filtros.', adverts: [], total });
     }
 
     if (user.favorites) {
@@ -894,9 +894,9 @@ export const getUserChats = async (req, res, next) => {
     })
     .lean();
   
-  if (!chats.length) {
-    return res.status(404).json({ message: 'No tienes conversaciones.' });
-  }
+    if (!chats.length) {
+      return res.status(200).json({ message: 'No tienes conversaciones.', chats: [] });
+    }
   
   // Crear una vista previa para cada chat
   const chatPreviews = chats.map(chat => {
@@ -924,7 +924,7 @@ export const getUserChats = async (req, res, next) => {
     res.status(200).json(chats);
   } catch (err) {
    // next(err);
-   logDetailedError(err, req, 'getUserChats');
+    logDetailedError(err, req, 'getUserChats');
     res.status(500).json({ message: 'Error al obtener las conversaciones', error: err.message });
   }
 };
