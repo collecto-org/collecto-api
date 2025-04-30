@@ -25,6 +25,6 @@ router.post('/logout', logout);  // Logout
 
 router.post('/recover', recoverPassword); // Recuperación de la pasword
 router.post('/recover/:token', verifyRecoverToken); // Verificar token de recuperacion
-router.post('/reset/:token', verifyToken, resetPassword); // Restablece la password
+router.post('/reset/:token', resetPassword); // Restablece la password
 
 export default router;
