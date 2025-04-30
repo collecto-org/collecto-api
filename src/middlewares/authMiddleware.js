@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 // Middleware para verificar el token de autenticación JWT
 function verifyToken(req, res, next) {
   const token = req.cookies.token;
+  console.log("token recibido :", token)
 
   if (!token) {
     return res.status(401).json({ error: 'No hay token de autenticación.' });

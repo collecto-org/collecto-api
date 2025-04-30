@@ -3,6 +3,12 @@ import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { uploadAvatarToCloudinary } from '../utils/upload.js';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Sign up
 export const register = async (req, res, next) => {
   const { 
@@ -246,6 +252,17 @@ export const recoverPassword = async (req, res, next) => {
     // Token de recuperacion de 1h
     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
+    const resetLink = `http://localhost:5173/recover/${resetToken}`;
+
+    // Ruta absoluta al archivo recover-password.html
+    const templatePath = path.join(__dirname, "../utils/emailTemplates/recover-password.html");
+
+    // Leer el archivo HTML
+    let htmlContent = fs.readFileSync(templatePath, "utf8");
+
+    // Reemplazar el marcador {{link}} por el enlace real
+    htmlContent = htmlContent.replace("{{link}}", resetLink);
+
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -260,9 +277,10 @@ export const recoverPassword = async (req, res, next) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: 'Recuperación de contraseña',
-      text: `Haga clic en el siguiente enlace para restablecer su contraseña: http://localhost:5173/api/auth/reset/${resetToken}`,
-    };    
+      subject: "Recuperación de contraseña",
+      html: htmlContent,
+    };
+    
 
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
