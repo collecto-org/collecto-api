@@ -22,6 +22,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import addressRoutes from "./routes/addressRoutes.js";
 import genderRoutes from "./routes/genderRoutes.js";
 import userRoutes from "./routes/tableRoutes/userRoutes.js";
+import catalogRoutes from './routes/catalogRoutes.js';
+
 
 import { Server } from "socket.io";
 import { createServer } from "node:http";
@@ -76,6 +78,7 @@ app.use("/api/shipmentTracking", shipmentTrackingRoutes); // Tracking de envíos
 app.use("/api/address", addressRoutes); // Direcciones
 app.use("/api/genders", genderRoutes); // Generos
 app.use("/api", userRoutes); // tabla de usuarios
+app.use('/api/catalogs', catalogRoutes); // Catalogos unificados
 
 // Ruta básica de prueba
 app.get("/", (req, res) => {
