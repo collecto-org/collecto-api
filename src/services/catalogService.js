@@ -16,7 +16,7 @@ export const getAllCatalogs = async () => {
   ]);
 
   return {
-    statuses,       // ← YA NO USAMOS arrayToMap
+    statuses,
     transactions,
     productTypes,
     universes,
