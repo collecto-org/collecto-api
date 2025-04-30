@@ -5,6 +5,7 @@ import User from '../models/user.js';
 import cloudinary from '../config/cloudinaryConfig.js'
 import { extractPublicId } from '../utils/upload.js';
 import { notifyStatusChange, notifyPriceChange, notifyAdvertDeleted  } from './notificationController.js'; ////////////////////////////////////////////////////////////
+import slugify from 'slugify';
 
 // Obtener todos los anuncios
 export const getAllAdverts = async (req, res, next) => {
@@ -254,8 +255,13 @@ export const searchAdverts = async (req, res, next) => {
 
     const queryFilter = {};
 
-    //INICIO DE LA LOGICA PARA BUSCAR EN EL BUSCADOR
+    if (!status) {
+      const availableStatuses = await Status.find({ code: { $in: ['available', 'reserved'] } });
+      const availableStatusIds = availableStatuses.map(s => s._id);
+      queryFilter.status = { $in: availableStatusIds };
+    }
 
+    //INICIO DE LA LOGICA PARA BUSCAR EN EL BUSCADOR
     let advertsWithPriority = [];  // Anuncios con prioridad (frase exacta)
     let advertsWithoutPriority = [];  // Anuncios sin prioridad (palabras sueltas)
 
@@ -524,7 +530,7 @@ export const createAdvert = async (req, res, next) => {
       description,
       price,
       transaction,
-      status, 
+      status,
       product_type,
       universe,
       condition,
@@ -538,6 +544,9 @@ export const createAdvert = async (req, res, next) => {
 
     await newAdvert.save();
 
+    newAdvert.slug = slugify(`${newAdvert.title}-${newAdvert._id}`, { lower: true, strict: true });
+    await newAdvert.save();
+
     res.status(201).json({
       message: 'Anuncio creado',
       advert: newAdvert,
@@ -547,6 +556,7 @@ export const createAdvert = async (req, res, next) => {
     res.status(500).json({ message: 'Error al crear el anuncio', error: err.message });
   }
 };
+
 
 
 // Editar un anuncio propio (Endpoint de Gestión de usuario)  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -591,9 +601,6 @@ export const editAdvert = async (req, res, next, io, connectedUsers) => {
 
     const oldPrice = advert.price;
     const oldStatus = advert.status
-   
-
-
 
     if (advert.status === 'vendido') {
       return res.status(400).json({ message: 'No se puede editar un anuncio ya vendido.' });
@@ -628,6 +635,8 @@ export const editAdvert = async (req, res, next, io, connectedUsers) => {
     }
 
     // Actualizar el anuncio
+    const titleChanged = title && title !== advert.title;
+
     advert.title = title || advert.title;
     advert.description = description || advert.description;
     advert.price = price || advert.price;
@@ -641,8 +650,13 @@ export const editAdvert = async (req, res, next, io, connectedUsers) => {
     advert.tags = tags || advert.tags;
     advert.images = newImages.length > 0 ? newImages : advert.images;
     advert.updatedAt = Date.now();
-
+    
+    if (titleChanged) {
+      advert.slug = slugify(`${advert.title}-${advert._id}`, { lower: true, strict: true });
+    }
+    
     await advert.save();
+    
 
     // Notificar a los usuarios que lo tenían en favoritos
     if (price && Number(price) !== oldPrice) {                                      //////////////////////////////////

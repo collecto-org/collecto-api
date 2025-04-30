@@ -22,15 +22,6 @@ const advertSchema = new mongoose.Schema({
   images: [String],
 });
 
-// Generación del slug
-advertSchema.pre('save', function(next) {
-  if (this.isModified('title')) {  // <-- Solo si ha cambiado el title
-    const timestamp = Date.now();
-    this.slug = slugify(this.title, { lower: true, strict: true }) + `-${timestamp}`;
-  }
-  next();
-});
-
 
 // Métodos para filtrar datos sensibles antes de enviarlos
 advertSchema.methods.toJSON = function () {
