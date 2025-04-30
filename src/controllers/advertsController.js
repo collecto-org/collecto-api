@@ -30,7 +30,7 @@ export const getAllAdverts = async (req, res, next) => {
       .populate('universe')
       .populate('condition')
       .populate('brand')
-      .populate('user');
+      .populate('user', 'username avatarUrl')
 
     const totalAdverts = await Advert.countDocuments({ status: { $in: availableStatusIds } });
 
@@ -88,7 +88,7 @@ export const getAdvertBySlug = async (req, res, next) => {
     .populate('universe')
     .populate('condition')
     .populate('brand')
-    .populate('user'); 
+    .populate('user', 'username avatarUrl') 
 
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
@@ -128,7 +128,7 @@ console.log(id)
     .populate('universe')
     .populate('condition')
     .populate('brand')
-    .populate('user'); 
+    .populate('user', 'username avatarUrl') 
 
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
@@ -169,7 +169,7 @@ export const getAdvertOGView = async (req, res, next) => {
       .populate('universe')
       .populate('condition')
       .populate('brand')
-      .populate('user');
+      .populate('user', 'username avatarUrl')
 
     if (!advert) {
       return res.status(404).send("Anuncio no encontrado");
@@ -300,7 +300,7 @@ export const searchAdverts = async (req, res, next) => {
         .populate('universe')
         .populate('condition')
         .populate('brand')
-        .populate('user');
+        .populate('user', 'username avatarUrl')
 
       if (!adverts.length) {
         return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total: totalAdverts });
@@ -371,7 +371,7 @@ export const searchAdverts = async (req, res, next) => {
       .populate('universe')
       .populate('condition')
       .populate('brand')
-      .populate('user');
+      .populate('user', 'username avatarUrl')
 
     if (!adverts.length) {
       return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total: totalAdverts });
