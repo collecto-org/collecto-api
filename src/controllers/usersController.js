@@ -876,28 +876,52 @@ export const getUserChats = async (req, res, next) => {
   try {
     // Buscar todos los chats
     const chats = await Chat.find({ users: userId })
-      .populate('advertId', 'title')
-      .populate('users', 'username avatar')
-      .sort({ 'messages.createdAt': -1 });
+    .populate({
+      path: "messages.sender",
+      select: "username avatarUrl -_id",
+    })
+    .populate({
+      path: "messages.receiver",
+      select: "username -_id",
+    })
+    .populate({
+      path: "users",
+      select: "username avatarUrl -_id", 
+    })
+    .populate({
+      path: "advertId",
+      select: "title "
+    })
+    .lean();
+  
+  if (!chats.length) {
+    return res.status(404).json({ message: 'No tienes conversaciones.' });
+  }
+  
+  // Crear una vista previa para cada chat
+  const chatPreviews = chats.map(chat => {
+    const lastMessage = chat.messages[chat.messages.length - 1];
+    const previewMessage = lastMessage ? `${lastMessage.content.substring(0, 30)}...` : 'No hay mensajes aún';
+  
+    return {
+      roomId: chat.roomId,
+      advertTitle: chat.advertId.title,  // Título del anuncio
+      participants: chat.users.map(user => user.username), // Nombres de los participantes
+      message: chat.messages.map(msg => ({
+        content: msg.content,
+        senderUsername: msg.sender.username,  // Accedemos a username directamente
+        receiverUsername: msg.receiver.username,  // Accedemos a receiver.username
+        senderAvatar: msg.sender.avatarUrl,  // Si también necesitas el avatar
+        receiverAvatar: msg.receiver.avatarUrl,  // Avatar del receptor
+        isRead: msg.isRead,
+        createdAt: msg.createdAt
+      })),
+      lastMessage: previewMessage,
+      lastMessageTimestamp: lastMessage ? lastMessage.createdAt : null,
+    };
+  });
 
-    if (!chats.length) {
-      return res.status(404).json({ message: 'No tienes conversaciones.' });
-    }
-
-    // Crear una vista previa para cada chat
-    const chatPreviews = chats.map(chat => {
-      const lastMessage = chat.messages[chat.messages.length - 1];
-      const previewMessage = lastMessage ? `${lastMessage.content.substring(0, 30)}...` : 'No hay mensajes aún';
-      return {
-        roomId: chat.roomId,
-        advertTitle: chat.advertId.title,
-        participants: chat.users.map(user => user.username),
-        lastMessage: previewMessage,
-        lastMessageTimestamp: lastMessage ? lastMessage.createdAt : null,
-      };
-    });
-
-    res.status(200).json(chatPreviews);
+    res.status(200).json(chats);
   } catch (err) {
    // next(err);
    logDetailedError(err, req, 'getUserChats');

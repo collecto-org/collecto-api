@@ -16,7 +16,6 @@ export const getUserNotifications = async (req, res, next) => {
       .populate('advertId', 'title') // para mostrar el título del anuncio
       .sort({ createdAt: -1 }); // las más recientes primero
 
-      console.log("llega")
 
 
     res.status(200).json(notifications);
