@@ -6,7 +6,6 @@ import cloudinary from '../config/cloudinaryConfig.js'
 import { extractPublicId } from '../utils/upload.js';
 import { notifyStatusChange, notifyPriceChange, notifyAdvertDeleted  } from './notificationController.js'; ////////////////////////////////////////////////////////////
 import slugify from 'slugify';
-import { getAllCatalogs } from '../services/catalogService.js';
 
 // Obtener todos los anuncios
 export const getAllAdverts = async (req, res, next) => {
@@ -18,16 +17,20 @@ export const getAllAdverts = async (req, res, next) => {
     const order = sortOrder === 'asc' ? 1 : -1;
 
     const availableStatuses = await Status.find({ code: { $in: ['available', 'reserved'] } });
+
     const availableStatusIds = availableStatuses.map(status => status._id);
 
-    const [adverts, catalogs] = await Promise.all([
-      Advert.find({ status: { $in: availableStatusIds } })
-        .sort({ [sortField]: order })
-        .skip((page - 1) * limit)
-        .limit(Number(limit))
-        .populate('user', 'username avatar'),
-      getAllCatalogs()
-    ]);
+    const adverts = await Advert.find({ status: { $in: availableStatusIds } })
+      .sort({ [sortField]: order })
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .populate('transaction')
+      .populate('status')
+      .populate('product_type')
+      .populate('universe')
+      .populate('condition')
+      .populate('brand')
+      .populate('user');
 
     const totalAdverts = await Advert.countDocuments({ status: { $in: availableStatusIds } });
 
@@ -42,26 +45,23 @@ export const getAllAdverts = async (req, res, next) => {
           )
         : [];
 
-      const enrichedAdvert = {
-        ...advertObject,
-        images: imagesWithUrls,
-        transaction: catalogs.transactions[advert.transaction?.toString()],
-        status: catalogs.statuses[advert.status?.toString()],
-        product_type: catalogs.productTypes[advert.product_type?.toString()],
-        universe: catalogs.universes[advert.universe?.toString()],
-        condition: catalogs.conditions[advert.condition?.toString()],
-        brand: advert.brand ? catalogs.brands[advert.brand.toString()] : null,
-      };
-
       if (req.user) {
         const userId = req.user.id;
         const user = await User.findById(userId);
         const favorites = user.favorites.map(id => id.toString());
 
-        enrichedAdvert.isFavorite = favorites.includes(advert._id.toString());
+        const isFavorite = favorites.includes(advert._id.toString());
+        advertsWithFavStatus.push({
+          ...advertObject,
+          images: imagesWithUrls,
+          isFavorite,
+        });
+      } else {
+        advertsWithFavStatus.push({
+          ...advertObject,
+          images: imagesWithUrls,
+        });
       }
-
-      advertsWithFavStatus.push(enrichedAdvert);
     }
 
     res.status(200).json({
@@ -76,88 +76,81 @@ export const getAllAdverts = async (req, res, next) => {
 };
 
 
+
 // Detalle de un anuncio
 export const getAdvertBySlug = async (req, res, next) => {
   const { slug } = req.params;
-
   try {
-    const [advert, catalogs] = await Promise.all([
-      Advert.findOne({ slug }).populate('user', 'username avatar'),
-      getAllCatalogs()
-    ]);
+    const advert = await Advert.findOne({ slug })
+    .populate('transaction')
+    .populate('status')
+    .populate('product_type')
+    .populate('universe')
+    .populate('condition')
+    .populate('brand')
+    .populate('user'); 
 
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
 
-    const advertObject = advert.toObject();
-
-    const enrichedAdvert = {
-      ...advertObject,
+    const advertWithImages = {
+      ...advert.toObject(),
       images: advert.images.map(imagePath => 
         cloudinary.url(imagePath, { fetch_format: 'auto', quality: 'auto' })
       ),
-      transaction: catalogs.transactions[advert.transaction?.toString()],
-      status: catalogs.statuses[advert.status?.toString()],
-      product_type: catalogs.productTypes[advert.product_type?.toString()],
-      universe: catalogs.universes[advert.universe?.toString()],
-      condition: catalogs.conditions[advert.condition?.toString()],
-      brand: advert.brand ? catalogs.brands[advert.brand.toString()] : null,
     };
 
     if (req.user) {
-      const userId = req.user.id;
+      const userId = req.user.id; 
       const user = await User.findById(userId);
-      const favorites = user.favorites.map(id => id.toString());
+      const favorites = user.favorites.map(id => id.toString()); 
 
-      enrichedAdvert.isFavorite = favorites.includes(advert._id.toString());
+      const isFavorite = favorites.includes(advert._id.toString());
+      advertWithImages.isFavorite = isFavorite;
     }
 
-    res.status(200).json(enrichedAdvert);
+    res.status(200).json(advertWithImages);
   } catch (err) {
     next(err);
     res.status(500).json({ message: 'Error al obtener el anuncio', error: err.message });
   }
 };
 
-
 export const getAdvertById = async (req, res, next) => {
   const { id } = req.params;
-
   try {
-    const [advert, catalogs] = await Promise.all([
-      Advert.findById(id).populate('user', 'username avatar'),
-      getAllCatalogs()
-    ]);
+console.log(id)
+    const advert = await Advert.findById(id)
+    .populate('transaction')
+    .populate('status')
+    .populate('product_type')
+    .populate('universe')
+    .populate('condition')
+    .populate('brand')
+    .populate('user'); 
 
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
     }
 
-    const advertObject = advert.toObject();
-
-    const enrichedAdvert = {
-      ...advertObject,
-      images: advert.images.map(image =>
-        cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })
+    const advertWithImages = {
+      ...advert.toObject(),
+      images: advert.images.map(imagePath => 
+        cloudinary.url(imagePath, { fetch_format: 'auto', quality: 'auto' })
       ),
-      transaction: catalogs.transactions[advert.transaction?.toString()],
-      status: catalogs.statuses[advert.status?.toString()],
-      product_type: catalogs.productTypes[advert.product_type?.toString()],
-      universe: catalogs.universes[advert.universe?.toString()],
-      condition: catalogs.conditions[advert.condition?.toString()],
-      brand: advert.brand ? catalogs.brands[advert.brand.toString()] : null,
     };
 
     if (req.user) {
-      const userId = req.user.id;
+      const userId = req.user.id; 
       const user = await User.findById(userId);
-      const favorites = user.favorites.map(id => id.toString());
+      const favorites = user.favorites.map(id => id.toString()); 
 
-      enrichedAdvert.isFavorite = favorites.includes(advert._id.toString());
+      const isFavorite = favorites.includes(advert._id.toString());
+      advertWithImages.isFavorite = isFavorite;
     }
 
-    res.status(200).json(enrichedAdvert);
+    res.status(200).json(advertWithImages);
   } catch (err) {
     next(err);
     res.status(500).json({ message: 'Error al obtener el anuncio', error: err.message });
@@ -169,15 +162,25 @@ export const getAdvertOGView = async (req, res, next) => {
   const { slug } = req.params;
 
   try {
-    const advert = await Advert.findOne({ slug });
+    const advert = await Advert.findOne({ slug })
+      .populate('transaction')
+      .populate('status')
+      .populate('product_type')
+      .populate('universe')
+      .populate('condition')
+      .populate('brand')
+      .populate('user');
 
     if (!advert) {
       return res.status(404).send("Anuncio no encontrado");
     }
 
     const imageUrl = advert.images?.length
-      ? cloudinary.url(advert.images[0], { fetch_format: 'auto', quality: 'auto' })
-      : 'https://collecto.es/default-og-image.jpg';
+      ? cloudinary.url(advert.images[0], {
+          fetch_format: 'auto',
+          quality: 'auto',
+        })
+      : 'https://collecto.es/default-og-image.jpg'; // fallback
 
     const title = `${advert.title} por €${advert.price}`;
     const description = advert.description || "Artículo de colección disponible en Collecto";
@@ -213,7 +216,6 @@ export const getAdvertOGView = async (req, res, next) => {
 };
 
 
-
 // Filtro de anuncios
 // Añado el parametro query para buscar palabras sueltas en el buscador.
 // Cuando este endpoint se usa para filtrar anuncios, no se le pasa el parametro
@@ -230,7 +232,7 @@ export const getAdvertOGView = async (req, res, next) => {
 export const searchAdverts = async (req, res, next) => {
   try {
     const {
-      searchTerm,
+      searchTerm,  // Busqueda general de palabras o frases
       title,
       priceMin,
       priceMax,
@@ -259,28 +261,86 @@ export const searchAdverts = async (req, res, next) => {
       queryFilter.status = { $in: availableStatusIds };
     }
 
-    let advertsWithPriority = [];
-    let advertsWithoutPriority = [];
-
-    const catalogs = await getAllCatalogs();
+    //INICIO DE LA LOGICA PARA BUSCAR EN EL BUSCADOR
+    let advertsWithPriority = [];  // Anuncios con prioridad (frase exacta)
+    let advertsWithoutPriority = [];  // Anuncios sin prioridad (palabras sueltas)
 
     if (searchTerm) {
       const keywords = searchTerm.split(' ');
-      const fullQuery = searchTerm.trim();
 
+      // Primero, buscar la frase completa (todas las palabras juntas)
+      const fullQuery = searchTerm.trim();
       queryFilter.$or = [
         { title: { $regex: fullQuery, $options: 'i' } },
-        { description: { $regex: fullQuery, $options: 'i' } },
-      ];
+        { description: { $regex: fullQuery, $options: 'i' } }, 
+      ]; //ojo, la frase completa solo la busca en titulos o en descripciones
 
+      // Buscar por cada palabra por separado
       keywords.forEach(keyword => {
         queryFilter.$or.push(
           { title: { $regex: keyword, $options: 'i' } },
           { description: { $regex: keyword, $options: 'i' } },
           { tags: { $in: [keyword] } },
-        );
+          { 'product_type.name': { $regex: keyword, $options: 'i' } },
+          { 'brand.name': { $regex: keyword, $options: 'i' } },
+          { 'universe.name': { $regex: keyword, $options: 'i' } },
+          { 'condition.name': { $regex: keyword, $options: 'i' } },
+        ); // ojo las palabras sueltas las busca en título, descripciones, tags, tipò de producto, marca universo y condicionm.
       });
+
+      // Realizar la consulta
+      const totalAdverts = await Advert.countDocuments(queryFilter);
+      let adverts = await Advert.find(queryFilter)
+        .skip((page - 1) * limit)
+        .limit(Number(limit))
+        .sort({ [sortBy]: sortOrder })
+        .populate('transaction')
+        .populate('status')
+        .populate('product_type')
+        .populate('universe')
+        .populate('condition')
+        .populate('brand')
+        .populate('user');
+
+      if (!adverts.length) {
+        return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total: totalAdverts });
+      }
+
+      // Diferencia los anuncios que coinciden con la frase completa y aquellos que no
+      adverts.forEach(advert => {
+        if (advert.title.toLowerCase().includes(fullQuery.toLowerCase()) || advert.description.toLowerCase().includes(fullQuery.toLowerCase())) {
+          advertsWithPriority.push(advert);
+        } else {
+          advertsWithoutPriority.push(advert);
+        }
+      });
+
+      // Primero regresamos los anuncios de con la frase completa y luego las palabra ssueltas
+      const advertsSorted = [...advertsWithPriority, ...advertsWithoutPriority];
+
+      if (req.user) {
+        const userId = req.user.id;
+        const user = await User.findById(userId);
+        const favorites = user.favorites.map(id => id.toString());
+
+        const advertsWithFavStatus = advertsSorted.map(advert => ({
+          ...advert.toObject(),
+          images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+          isFavorite: favorites.includes(advert._id.toString()),
+        }));
+
+        return res.status(200).json({ adverts: advertsWithFavStatus, total: totalAdverts });
+      }
+
+      const advertsWithoutFavStatus = advertsSorted.map(advert => ({
+        ...advert.toObject(),
+        images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+      }));
+
+      // Logica original de SearchAdvert
+      return res.status(200).json({ adverts: advertsWithoutFavStatus, total: totalAdverts });
     } else {
+      // Si no hay parámetro 'searchTerm', se aplican los filtros estructurados como siempre
       if (title) queryFilter.title = { $regex: title, $options: 'i' };
       if (priceMin || priceMax) queryFilter.price = { $gte: Number(priceMin), $lte: Number(priceMax) };
       if (tags) queryFilter.tags = { $in: tags.split(',') };
@@ -305,50 +365,43 @@ export const searchAdverts = async (req, res, next) => {
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .sort({ [sortBy]: sortOrder })
-      .populate('user', 'username avatar');
+      .populate('transaction')
+      .populate('status')
+      .populate('product_type')
+      .populate('universe')
+      .populate('condition')
+      .populate('brand')
+      .populate('user');
 
     if (!adverts.length) {
       return res.status(200).json({ message: 'No se encontraron anuncios', adverts: [], total: totalAdverts });
     }
 
-    // Priorizar si venimos de searchTerm
-    const sortedAdverts = searchTerm
-      ? adverts.reduce((acc, advert) => {
-          const isMatch = advert.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          advert.description?.toLowerCase().includes(searchTerm.toLowerCase());
-          isMatch ? advertsWithPriority.push(advert) : advertsWithoutPriority.push(advert);
-          return [...advertsWithPriority, ...advertsWithoutPriority];
-        }, [])
-      : adverts;
+    if (req.user) {
+      const userId = req.user.id;
+      const user = await User.findById(userId);
+      const favorites = user.favorites.map(id => id.toString());
 
-    const userId = req.user?.id;
-    const favorites = userId
-      ? (await User.findById(userId))?.favorites.map(id => id.toString()) || []
-      : [];
-
-    const enrichedAdverts = sortedAdverts.map(advert => {
-      const advertObject = advert.toObject();
-
-      return {
-        ...advertObject,
-        images: advert.images.map(img => cloudinary.url(img, { fetch_format: 'auto', quality: 'auto' })),
+      const advertsWithFavStatus = adverts.map(advert => ({
+        ...advert.toObject(),
+        images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
         isFavorite: favorites.includes(advert._id.toString()),
-        transaction: catalogs.transactions[advert.transaction?.toString()],
-        status: catalogs.statuses[advert.status?.toString()],
-        product_type: catalogs.productTypes[advert.product_type?.toString()],
-        universe: catalogs.universes[advert.universe?.toString()],
-        condition: catalogs.conditions[advert.condition?.toString()],
-        brand: advert.brand ? catalogs.brands[advert.brand.toString()] : null,
-      };
-    });
+      }));
 
-    res.status(200).json({ adverts: enrichedAdverts, total: totalAdverts });
+      return res.status(200).json({ adverts: advertsWithFavStatus, total: totalAdverts });
+    }
+
+    const advertsWithoutFavStatus = adverts.map(advert => ({
+      ...advert.toObject(),
+      images: advert.images.map(image => cloudinary.url(image, { fetch_format: 'auto', quality: 'auto' })),
+    }));
+
+    res.status(200).json({ adverts: advertsWithoutFavStatus, total: totalAdverts });
   } catch (err) {
     next(err);
     res.status(500).json({ message: 'Error al buscar anuncios', error: err.message });
   }
 };
-
 
 
 // Actualizar estado y visibilidad //////////////////////////////////////////////////////////////////////////////////////////////////////
