@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';
 import Advert from '../models/advert.js';
 import User from '../models/user.js';
 import Chat from '../models/chat.js';
@@ -991,4 +992,28 @@ export const sendVerificationEmail = async (user) => {
 
   // Enviar correo
   await transporter.sendMail(mailOptions);
+};
+
+
+export const updatePassword = async (req, res, next) => {
+  try{
+    const userId = req.user.id
+    const { currentPassword, newPassword} = req.body;
+
+    const user = await User.findById(userId);
+    if(!user) return res.status(404).json ({ message: "Usuario no encontrado"});
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if(!isMatch) return res.status(404).json({ message: "Cotraseña actual incorrecta" });
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = passwordHash;
+    user.updatedAt = Date.now();
+    await user.save();
+
+    res.status(200).json({ message: "Contraseña Actualizada Correctamente"})
+  } catch (err){
+    logDetailedError(err, req, 'updatePassword');
+    res.status(500).json({ message: "Error al actualizar la contraseña"})
+  }
 };

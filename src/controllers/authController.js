@@ -6,6 +6,8 @@ import { uploadAvatarToCloudinary } from '../utils/upload.js';
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { logDetailedError } from '../utils/logger.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -124,7 +126,7 @@ export const register = async (req, res, next) => {
         });
       });
     } catch (err) {
-      next(err);
+      logDetailedError(err, req, 'getUserAdverts');
       res.status(500).json({ message: 'Error al registrar usuario', error: err.message });
     }
   }
@@ -156,7 +158,7 @@ export const verifyRegisterEmail = async (req, res, next) => {
 res.redirect(`${frontendUrl}/email-verified-success`);
 
   } catch (error) {
-    next(err);
+    logDetailedError(err, req, 'getUserAdverts');;
     res.status(400).send('Token inválido o expirado');
   }
 };
@@ -213,7 +215,7 @@ export const login = async (req, res, next) => {
       },
     });
   } catch (err) {
-    next(err);
+    logDetailedError(err, req, 'getUserAdverts');;
     res.status(500).json({ message: 'Error en el login', error: err.message });
   }
 };
@@ -231,7 +233,7 @@ export const logout = (req, res, next) => {
 
     res.status(200).json({ message: 'Sesión cerrada correctamente' });
   } catch (err) {
-    next(err);
+    logDetailedError(err, req, 'getUserAdverts');;
     res.status(500).json({ message: 'Error al cerrar sesión', error: err.message });
   }
 };
@@ -289,7 +291,7 @@ export const recoverPassword = async (req, res, next) => {
       res.status(200).json({ message: 'Correo de recuperación enviado' });
     });
   } catch (err) {
-    next(err);
+    logDetailedError(err, req, 'getUserAdverts');;
     res.status(500).json({ message: 'Error al recuperar contraseña', error: err.message });
   }
 };
@@ -305,7 +307,7 @@ export const verifyRecoverToken = async (req, res, next) => {
 
     res.status(200).json({ message: 'Token de recuperación válido', userId: decoded.id });
   } catch (err) {
-    next(err);
+    logDetailedError(err, req, 'getUserAdverts');;
     res.status(400).json({ message: 'Token de recuperación inválido o expirado' });
   }
 };
@@ -353,7 +355,8 @@ export const resetPassword = async (req, res, next) => {
   
   } catch (err) {
     console.log(err);
-    next(err);
+   logDetailedError(err, req, 'getUserAdverts');;
     res.status(500).json({ message: 'Error al restablecer la contraseña', error: err.message });
   }  
 };
+
