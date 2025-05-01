@@ -6,6 +6,10 @@ import cloudinary from '../config/cloudinaryConfig.js'
 import { extractPublicId } from '../utils/upload.js';
 import { notifyStatusChange, notifyPriceChange, notifyAdvertDeleted  } from './notificationController.js'; ////////////////////////////////////////////////////////////
 import slugify from 'slugify';
+import Brand from '../models/brand.js';
+import ProductType from '../models/productType.js';
+import Universe from "../models/universe.js"
+import Condition from "../models/condition.js"
 
 // Obtener todos los anuncios
 export const getAllAdverts = async (req, res, next) => {
@@ -266,27 +270,44 @@ export const searchAdverts = async (req, res, next) => {
     let advertsWithoutPriority = [];  // Anuncios sin prioridad (palabras sueltas)
 
     if (searchTerm) {
-      const keywords = searchTerm.split(' ');
-
-      // Primero, buscar la frase completa (todas las palabras juntas)
+      const keywords = searchTerm.trim().split(/\s+/);
       const fullQuery = searchTerm.trim();
+
       queryFilter.$or = [
         { title: { $regex: fullQuery, $options: 'i' } },
-        { description: { $regex: fullQuery, $options: 'i' } }, 
-      ]; //ojo, la frase completa solo la busca en titulos o en descripciones
+        { description: { $regex: fullQuery, $options: 'i' } },
+      ];
 
-      // Buscar por cada palabra por separado
-      keywords.forEach(keyword => {
+      for (const keyword of keywords) {
+        // Buscar IDs de documentos relacionados por nombre
+        const [matchingBrands, matchingTypes, matchingUniverses, matchingConditions, matchingUsers] = await Promise.all([
+          Brand.find({ name: { $regex: keyword, $options: 'i' } }).select('_id'),
+          ProductType.find({ name: { $regex: keyword, $options: 'i' } }).select('_id'),
+          Universe.find({ name: { $regex: keyword, $options: 'i' } }).select('_id'),
+          Condition.find({ name: { $regex: keyword, $options: 'i' } }).select('_id'),
+          User.find({ username: { $regex: keyword, $options: 'i' } }).select('_id'),
+
+        ]);
+
+        const brandIds = matchingBrands.map(b => b._id);
+        const typeIds = matchingTypes.map(t => t._id);
+        const universeIds = matchingUniverses.map(u => u._id);
+        const conditionIds = matchingConditions.map(c => c._id);
+        const userIds = matchingUsers.map(u => u._id);
+
+
         queryFilter.$or.push(
           { title: { $regex: keyword, $options: 'i' } },
           { description: { $regex: keyword, $options: 'i' } },
           { tags: { $in: [keyword] } },
-          { 'product_type.name': { $regex: keyword, $options: 'i' } },
-          { 'brand.name': { $regex: keyword, $options: 'i' } },
-          { 'universe.name': { $regex: keyword, $options: 'i' } },
-          { 'condition.name': { $regex: keyword, $options: 'i' } },
-        ); // ojo las palabras sueltas las busca en título, descripciones, tags, tipò de producto, marca universo y condicionm.
-      });
+          { brand: { $in: brandIds } },
+          { product_type: { $in: typeIds } },
+          { universe: { $in: universeIds } },
+          { condition: { $in: conditionIds } },
+          { user: { $in: userIds } }, 
+
+        );
+      }
 
       // Realizar la consulta
       const totalAdverts = await Advert.countDocuments(queryFilter);
@@ -348,8 +369,14 @@ export const searchAdverts = async (req, res, next) => {
       if (transaction) queryFilter.transaction = transaction;
       if (collectionref) queryFilter.collectionref = collectionref;
       if (brand) queryFilter.brand = brand;
-      if (product_type) queryFilter.product_type = product_type;
-      if (universe) queryFilter.universe = universe;
+      if (product_type) {
+        const todosProductType = await ProductType.findOne({ slug: 'todos' });
+        if (todosProductType && product_type === todosProductType._id.toString()) {
+          queryFilter.product_type = { $ne: todosProductType._id };
+        } else {
+          queryFilter.product_type = product_type;
+        }
+      }      if (universe) queryFilter.universe = universe;
       if (condition) queryFilter.condition = condition;
       if (createdAtMin || createdAtMax) {
         queryFilter.createdAt = {};

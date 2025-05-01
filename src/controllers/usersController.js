@@ -873,7 +873,6 @@ export const sendMessageToChat = async (req, res, next, io, connectedUsers) => {
 // Obtener todas las conversaciones del usuario
 export const getUserChats = async (req, res, next) => {
   const userId = req.user.id;
-  console.log("eeeeeeeee")
 
   try {
     // Buscar todos los chats
@@ -894,34 +893,18 @@ export const getUserChats = async (req, res, next) => {
       path: "advertId",
       select: "title "
     })
-    .lean();
+    .lean()
+    
+    chats.sort((a, b) => {
+      const aLastDate = a.messages.length > 0 ? new Date(a.messages[a.messages.length - 1].createdAt) : new Date(0);
+      const bLastDate = b.messages.length > 0 ? new Date(b.messages[b.messages.length - 1].createdAt) : new Date(0);
+      return bLastDate - aLastDate;
+    });
   
     if (!chats.length) {
       return res.status(200).json({ message: 'No tienes conversaciones.', chats: [] });
     }
   
-  // Crear una vista previa para cada chat
-  const chatPreviews = chats.map(chat => {
-    const lastMessage = chat.messages[chat.messages.length - 1];
-    const previewMessage = lastMessage ? `${lastMessage.content.substring(0, 30)}...` : 'No hay mensajes aún';
-  
-    return {
-      roomId: chat.roomId,
-      advertTitle: chat.advertId.title,  // Título del anuncio
-      participants: chat.users.map(user => user.username), // Nombres de los participantes
-      message: chat.messages.map(msg => ({
-        content: msg.content,
-        senderUsername: msg.sender.username,  // Accedemos a username directamente
-        receiverUsername: msg.receiver.username,  // Accedemos a receiver.username
-        senderAvatar: msg.sender.avatarUrl,  // Si también necesitas el avatar
-        receiverAvatar: msg.receiver.avatarUrl,  // Avatar del receptor
-        isRead: msg.isRead,
-        createdAt: msg.createdAt
-      })),
-      lastMessage: previewMessage,
-      lastMessageTimestamp: lastMessage ? lastMessage.createdAt : null,
-    };
-  });
 
     res.status(200).json(chats);
   } catch (err) {
