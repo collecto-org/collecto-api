@@ -1,133 +1,104 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
+// import nodemailer from 'nodemailer';
 import { uploadAvatarToCloudinary } from '../utils/upload.js';
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+import emailQueue from '../jobs/emailQueue.js';
+import connectToRabbitMQ from '../jobs/emailQueue.js';
 
 // Sign up
 export const register = async (req, res, next) => {
-  const { 
-    username, 
-    email, 
-    password, 
-    firstName, 
+  const {
+    username,
+    email,
+    password,
+    firstName,
     lastName,
     dateOfBirth,
-    phone, 
-    location, 
-    bio, 
+    phone,
+    location,
+    bio,
     direccionId,
-    avatarUrl: avatarUrlFromBody 
+    avatarUrl: avatarUrlFromBody
   } = req.body;
 
   let avatarUrl = avatarUrlFromBody || "";
 
-  
-
-  // Middleware de subida de avatar
   try {
-     // Si el avatar se sube correctamente, obtenemos la URL
     if (req.file) {
       const result = await uploadAvatarToCloudinary(req.file);
       avatarUrl = result.secure_url;
     }
 
-      // Verificar si el usuario ya existe
-      const userExists = await User.findOne({ $or: [{ email }, { username }] });
-
-      if (userExists) {
-        return res.status(400).json({ message: 'El usuario ya existe' });
-      }
-
-      // Hashear la contraseña
-      const passwordHash = await bcrypt.hash(password, 10);
-
-      // Crear nuevo usuario
-      const newUser = await User.create({
-        role: 'user',
-        username,
-        email,
-        passwordHash,
-        firstName,
-        lastName,
-        dateOfBirth,
-        phone,
-        location,
-        avatarUrl,
-        bio,
-        direccionId,
-      });
-
-      // Token de verificación de email (expira en 1h)
-      const emailVerificationToken = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-      // Configurar el transportador de correo
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
-
-      // Configura las opciones del correo
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: newUser.email,
-        subject: 'Verificación de cuenta',
-        html: `
-          <p>Gracias por registrarte. Por favor, haz clic en el siguiente enlace para verificar tu correo electrónico:</p> 
-          <a href="${process.env.FRONTEND_URL}/verify-email/${emailVerificationToken}">Verificar mi correo electrónico</a>
-        `,
-      };
-
-      // Enviar el correo de verificación
-      transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-          console.log('Error al enviar el correo:', err);
-          return res.status(500).json({ message: 'Error al enviar correo de verificación' });
-        }
-
-        console.log('Correo de verificación enviado:', info.response);
-
-        // Generar el token JWT para autenticación
-        const token = jwt.sign(
-          { id: newUser._id, username: newUser.username },
-          process.env.JWT_SECRET,
-          { expiresIn: '1h' }
-        );
-        // ENVÍA EL TOKEN JWT COMO COOKIE HTTP-ONLY
-        res.cookie('token', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 3600000, // la cookie expira en 1 hora
-          sameSite: 'Strict',
-        });
-
-        // Responder después de enviar el correo
-        res.status(201).json({
-          message: 'Usuario registrado. Verifica tu correo para activarlo.',
-          user: {
-            id: newUser._id,
-            username: newUser.username,
-            email: newUser.email,
-            avatarUrl: newUser.avatarUrl,
-          }
-        });
-      });
-    } catch (err) {
-      next(err);
-      res.status(500).json({ message: 'Error al registrar usuario', error: err.message });
+    const userExists = await User.findOne({ $or: [{ email }, { username }] });
+    if (userExists) {
+      return res.status(400).json({ message: 'El usuario ya existe' });
     }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      role: 'user',
+      username,
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+      dateOfBirth,
+      phone,
+      location,
+      avatarUrl,
+      bio,
+      direccionId,
+    });
+
+    const emailVerificationToken = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    // Conectarse a RabbitMQ y encolar el mensaje
+    const { channel } = await connectToRabbitMQ();
+    console.log('Encolando email de verificación...');
+    await channel.sendToQueue('emailQueue', Buffer.from(JSON.stringify({
+      type: 'verifyEmail',
+      data: {
+        to: newUser.email,
+        token: emailVerificationToken,
+      }
+    }), { persistent: true }));
+    console.log('Email encolado');
+
+    const token = jwt.sign(
+      { id: newUser._id, username: newUser.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 3600000,
+      sameSite: 'Strict',
+    });
+
+    res.status(201).json({
+      message: 'Usuario registrado. Verifica tu correo para activarlo.',
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        avatarUrl: newUser.avatarUrl,
+      }
+    });
+
+  } catch (err) {
+    next(err);
+    res.status(500).json({ message: 'Error al registrar usuario', error: err.message });
   }
+};
 
 
 
@@ -244,50 +215,24 @@ export const recoverPassword = async (req, res, next) => {
 
   try {
     const user = await User.findOne({ email });
-
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    // Token de recuperacion de 1h
     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-    const resetLink = `http://localhost:5173/recover/${resetToken}`;
-
-    // Ruta absoluta al archivo recover-password.html
-    const templatePath = path.join(__dirname, "../utils/emailTemplates/recover-password.html");
-
-    // Leer el archivo HTML
-    let htmlContent = fs.readFileSync(templatePath, "utf8");
-
-    // Reemplazar el marcador {{link}} por el enlace real
-    htmlContent = htmlContent.replace("{{link}}", resetLink);
-
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: user.email,
-      subject: "Recuperación de contraseña",
-      html: htmlContent,
-    };
-    
-
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) {
-        return res.status(500).json({ message: 'Error al enviar correo', error: err.message });
+    // Conectarse a RabbitMQ y encolar el mensaje
+    const { channel } = await connectToRabbitMQ();
+    await channel.sendToQueue('emailQueue', Buffer.from(JSON.stringify({
+      type: 'recoverPassword',
+      data: {
+        to: user.email,
+        token: resetToken,
       }
-      res.status(200).json({ message: 'Correo de recuperación enviado' });
-    });
+    }), { persistent: true }));
+
+    res.status(200).json({ message: 'Correo de recuperación enviado' });
+
   } catch (err) {
     next(err);
     res.status(500).json({ message: 'Error al recuperar contraseña', error: err.message });
@@ -320,40 +265,30 @@ export const resetPassword = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
-  
+
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
-  
+
     const passwordHash = await bcrypt.hash(newPassword, 10);
     user.passwordHash = passwordHash;
-    user.updatedAt = Date.now(); 
+    user.updatedAt = Date.now();
     await user.save();
-  
-// Enviar correo de confirmación
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-  
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: user.email,
-      subject: 'Contraseña restablecida',
-      text: 'Su contraseña ha sido restablecida correctamente.',
-    };
-  
-    // Usar await en vez de callback
-    await transporter.sendMail(mailOptions);
-  
+
+    // Conectarse a RabbitMQ y encolar el mensaje
+    const { channel } = await connectToRabbitMQ();
+    await channel.sendToQueue('emailQueue', Buffer.from(JSON.stringify({
+      type: 'resetConfirmation',
+      data: {
+        to: user.email,
+      }
+    }), { persistent: true }));
+
     res.status(200).json({ message: 'Contraseña actualizada y correo de confirmación enviado' });
-  
+
   } catch (err) {
     console.log(err);
     next(err);
     res.status(500).json({ message: 'Error al restablecer la contraseña', error: err.message });
-  }  
+  }
 };

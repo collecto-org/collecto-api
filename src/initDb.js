@@ -8,7 +8,7 @@ import Condition from "./models/condition.js";
 import Brand from "./models/brand.js";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import Advert from "./models/advert.js";
 
 dotenv.config();
