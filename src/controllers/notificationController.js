@@ -13,7 +13,7 @@ export const getUserNotifications = async (req, res, next) => {
 
     const notifications = await Notification.find({ user: userId })
       .populate('notificationType', 'label icon') // mostrar nombre legible e icono
-      .populate('advertId', 'title') // para mostrar el título del anuncio
+      .populate('advertId', 'slug') // para mostrar el título del anuncio
       .sort({ createdAt: -1 }); // las más recientes primero
 
 
