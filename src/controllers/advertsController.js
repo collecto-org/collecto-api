@@ -454,7 +454,7 @@ export const updateAdvertStatus = async (req, res, next, io, connectedUsers) => 
     await advert.save();
 
     // Notificar a los usuarios que lo tenían en favoritos                 ////////////////////////////////////////
-    await notifyStatusChange(advert._id, status, io, connectedUsers);
+    await notifyStatusChange(advert, io, connectedUsers);
 
     res.status(200).json({
       message: `Estado actualizado a ${status} y visibilidad ajustada.`,

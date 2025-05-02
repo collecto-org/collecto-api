@@ -14,6 +14,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
 export const getUserAdverts = async (req, res, next) => {
@@ -1086,9 +1088,9 @@ export const getChatMessages = async (req, res, next) => {
   }
 };
 
-import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
 
+// Este email se envía directamente sin usar RabbitMQ porque es crítico para el flujo del usuario
+// y debe llegar de inmediato tras cambiar su correo, sin depender de colas externas.
 export const sendVerificationEmail = async (user) => {
   if (!user || !user.email) {
     throw new Error('Usuario o email no proporcionado');

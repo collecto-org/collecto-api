@@ -4,6 +4,8 @@ import User from '../models/user.js';
 import Advert from '../models/advert.js';
 import Status from '../models/status.js';
 import { sendEmailNotification } from '../utils/emailUtils.js';
+import connectToRabbitMQ from '../jobs/emailQueue.js';
+
 
 
 
@@ -63,7 +65,9 @@ export const notifyStatusChange = async (advert, io, connectedUsers) => {
 
     const messageTemplate = notificationType.template;
     const message = messageTemplate.replace('{title}', advert.title);
-    
+
+    const { channel } = await connectToRabbitMQ();
+
     for (const user of users) {
       const notification = new Notification({
         user: user._id,
@@ -71,13 +75,11 @@ export const notifyStatusChange = async (advert, io, connectedUsers) => {
         advertId: advert._id,
         message,
       });
-
       await notification.save();
 
       const socketId = connectedUsers.get(user._id.toString());
 
       if (socketId) {
-        //  Si elñ usuario está conectado: Enviar por Socket.IO
         io.to(socketId).emit('new-notification', {
           message,
           advert: {
@@ -91,16 +93,23 @@ export const notifyStatusChange = async (advert, io, connectedUsers) => {
           },
         });
       } else {
-        // Si el usuario no está conectado: Enviar por email
-        await sendEmailNotification(user.email, message);
+        await channel.sendToQueue('emailQueue', Buffer.from(JSON.stringify({
+          type: 'genericNotification',
+          data: {
+            to: user.email,
+            subject: notificationType.label,
+            html: message
+          }
+        })), { persistent: true });
       }
     }
 
-    console.log(`Notificaciones de estado enviadas a ${users.length} usuarios.`);
+    console.log(`Notificaciones de estado encoladas para ${users.length} usuarios.`);
   } catch (err) {
     console.error('Error notificando cambio de estado:', err.message);
   }
 };
+
 
 
 
@@ -117,6 +126,8 @@ export const notifyPriceChange = async (advert, io, connectedUsers) => {
       .replace('{title}', advert.title)
       .replace('{price}', advert.price.toFixed(2));
 
+    const { channel } = await connectToRabbitMQ();
+
     for (const user of users) {
       const notification = new Notification({
         user: user._id,
@@ -143,18 +154,22 @@ export const notifyPriceChange = async (advert, io, connectedUsers) => {
           },
         });
       } else {
-        await sendEmailNotification(user.email, message);
+        await channel.sendToQueue('emailQueue', Buffer.from(JSON.stringify({
+          type: 'genericNotification',
+          data: {
+            to: user.email,
+            subject: notificationType.label,
+            html: message
+          }
+        })), { persistent: true });
       }
     }
 
-    console.log(`Notificaciones de cambio de precio enviadas a ${users.length} usuarios.`);
+    console.log(`Notificaciones de cambio de precio encoladas para ${users.length} usuarios.`);
   } catch (err) {
     console.error('Error notificando cambio de precio:', err.message);
   }
 };
-
-
-
 
 export const notifyAdvertDeleted = async (advert, io, connectedUsers) => {
   try {
@@ -166,6 +181,8 @@ export const notifyAdvertDeleted = async (advert, io, connectedUsers) => {
 
     const message = notificationType.template.replace('{title}', advert.title);
 
+    const { channel } = await connectToRabbitMQ();
+
     for (const user of users) {
       const notification = new Notification({
         user: user._id,
@@ -192,17 +209,22 @@ export const notifyAdvertDeleted = async (advert, io, connectedUsers) => {
           },
         });
       } else {
-        await sendEmailNotification(user.email, message);
+        await channel.sendToQueue('emailQueue', Buffer.from(JSON.stringify({
+          type: 'genericNotification',
+          data: {
+            to: user.email,
+            subject: notificationType.label,
+            html: message
+          }
+        })), { persistent: true });
       }
     }
 
-    console.log(`Notificaciones de eliminación enviadas a ${users.length} usuarios.`);
+    console.log(`Notificaciones de eliminación encoladas para ${users.length} usuarios.`);
   } catch (err) {
     console.error('Error notificando eliminación de anuncio:', err.message);
   }
 };
-
-
 
 export const notifyNewMessage = async ({ advertId, senderId, recipientId }, io, connectedUsers) => {
   try {
@@ -247,13 +269,20 @@ export const notifyNewMessage = async ({ advertId, senderId, recipientId }, io, 
     } else {
       const recipient = await User.findById(recipientId);
       if (recipient?.email) {
-        await sendEmailNotification(recipient.email, message);
+        const { channel } = await connectToRabbitMQ();
+        await channel.sendToQueue('emailQueue', Buffer.from(JSON.stringify({
+          type: 'genericNotification',
+          data: {
+            to: recipient.email,
+            subject: notificationType.label,
+            html: message
+          }
+        })), { persistent: true });
       }
     }
 
-    console.log(`Notificación de nuevo mensaje enviada a ${recipientId}.`);
+    console.log(`Notificación de nuevo mensaje encolada para ${recipientId}.`);
   } catch (err) {
     console.error('Error al crear notificación de mensaje:', err.message);
   }
 };
-

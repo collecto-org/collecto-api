@@ -23,7 +23,10 @@ const processEmailQueue = async () => {
           await sendResetConfirmationEmail(job.data.to);
         } else if (job.type === 'searchMatchNotification') {
           await sendNotificationEmail(job.data.userId, job.data.advert);
-        }
+        } else if (job.type === 'genericNotification') {
+          const { to, html, subject } = job.data;
+          await sendEmailNotification(to, html, subject);
+        }        
         channel.ack(msg);
       } catch (error) {
         console.error(`[emailWorker] Error al procesar el job: ${error.message}`);
