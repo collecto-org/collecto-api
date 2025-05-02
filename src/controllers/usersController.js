@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import Advert from '../models/advert.js';
 import User from '../models/user.js';
 import Chat from '../models/chat.js';
