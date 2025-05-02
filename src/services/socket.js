@@ -67,7 +67,6 @@ io.on("connection", (socket) => {
         });
 
         await chatRoom.save();
-        console.log("Sala de chat creada: ", chatRoom);
       }
 
       if (chatRoom) { // Cargar mensajes previos
@@ -106,7 +105,6 @@ io.on("connection", (socket) => {
       }
 
       socket.join(roomId);
-      console.log(`Usuario ${user} unido a la sala ${roomId}`);
     } catch (error) {
       console.log("Error al crear el chat", error);
     }
@@ -119,7 +117,6 @@ io.on("connection", (socket) => {
         break;
       }
     }
-    console.log("Usuario desconectado");
   });
 
   socket.on("chat message", async (msg) => {
@@ -180,11 +177,16 @@ io.on("connection", (socket) => {
           .lean();
 
         const receiverUser = await User.findById(receiver);
+        const senderUser = await User.findById(sender);
         const receiverSocketId = connectedUsers.get(receiverUser._id.toString());
-     
-
+        const senderSocketId = connectedUsers.get(senderUser._id.toString());
+ 
         if (receiverSocketId) {
           io.to(receiverSocketId).emit("chat message", populatedChatRoom);
+         
+        }
+        if(senderSocketId){
+          io.to(senderSocketId).emit("chat message", populatedChatRoom);
         }
         io.to(roomId).emit("chat message", {
           roomId,
