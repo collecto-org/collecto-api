@@ -1,12 +1,19 @@
+import bcrypt from 'bcrypt';
 import Advert from '../models/advert.js';
 import User from '../models/user.js';
 import Chat from '../models/chat.js';
+import Notification from "../models/notification.js"
+import Status from '../models/status.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { notifyNewMessage } from './notificationController.js';
 import { extractPublicId } from '../utils/upload.js';
 import { logDetailedError } from '../utils/logger.js';
-
-
+import AuditLog from "../models/auditLog.js"
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Ver anuncios de un usuario (Endpoint de gestión de anuncios)
 export const getUserAdverts = async (req, res, next) => {
@@ -150,6 +157,7 @@ export const getCurrentUser = async (req, res, next) => {
       location: user.location,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
+      creationDate: user.createdAt,
     });
   } catch (err) {
    // next(err);
@@ -294,8 +302,132 @@ export const checkEmailExists = async (req, res) => {
 
 
 
+
+//Eliminación del perfil del usuario
+
+export const deleteUserProfile = async(req, res, next ) =>{
+  const userId = req.user.id;
+  const { password } = req.body;
+
+  try {
+    const user = await User.findById(userId)
+    if(!user) return res.status(404). json ({ message: "Usuario no encontrado"})
+    
+    const isMatch = await bcrypt.compare(password, user.passwordHash)
+    if(!isMatch) return res.status(401).json({ message: "Contraseña incorrecta"})
+
+      // verificacion de adverts
+      const activeStatusCodes = ['reserved'];
+      const activeStatuses = await Status.find({ code: { $in: activeStatusCodes }, context: "Advert" });
+      const activeStatusIds = activeStatuses.map(status => status._id);
+  
+      const activeAdverts = await Advert.find({
+        user: userId,
+        status: { $in: activeStatusIds }
+      });
+  
+      if (activeAdverts.length > 0) {
+        return res.status(400).json({
+          message: 'No puedes eliminar tu cuenta mientras tengas anuncios activos (disponible, reservado o vendido).'
+        });
+      }
+      
+      //1. Eliinación del avatar
+      console.log("Eliminado avatar")
+      if(user.avatarUrl){
+        const publicId = extractPublicId(user.avatarUrl)
+        if(publicId) await cloudinary.uploader.destroy(publicId)
+      }
+
+      //2. Eliminación de anuncios
+      console.log("Eliminado anuncios")
+      const adverts = await Advert.find({ user: userId })
+      await Promise.all (adverts.map(async advert => {
+        for (const image of advert.images){
+          const publicId = extractPublicId(image)
+          if(publicId) {
+            await cloudinary.uploader.destroy(publicId)
+          }
+        }
+        await Advert.findByIdAndDelete(advert._id)
+      }));
+
+      //3. Eliminar los chats
+      console.log("Eliminado chats")
+      await Chat.deleteMany({ users: userId});
+
+      // 4. Eliminar notificacion dirigidas al usuario
+      console.log("Eliminado notificaciones")
+      await Notification.deleteMany({ user: userId})
+
+      // 5. Eliminacion del usuario
+      console.log("Eliminado usuario")
+      await User.findByIdAndDelete(userId)
+
+
+      //envio del correo
+      //const templatePath = path.join(__dirname, "../utils/emailTemplates/accountDeleted.html");
+      //let htmlContent1 = fs.readFileSync(templatePath, "utf8");
+     
+      const htmlContent = fs.readFileSync(
+        path.join(__dirname, '../utils/emailTemplates/accountDeleted.html'),
+        'utf8'
+      );
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+
+      console.log("Usuario: ", user.username)
+      console.log("correo a enviar: ", user.email)
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "Cuenta eliminada de Collecto",
+        html: htmlContent.replace('{{username}}', user.username),
+      };
+
+
+      console.log("Enviar el correo")
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+          console.error("Error al enviar correo de confirmación:", err.message);
+        } else {
+          console.log("Correo de eliminación enviado:", info.response);
+        }
+        });
+
+      //guardado de log de borrado
+      await AuditLog.create({
+        action: "delete_account",
+        user: user._id,
+        username: user.username,
+        email: user.email,
+        details: {
+          deletedAt: new Date(),
+          avatarDeleted: !!user.avatarUrl,
+          totalAdverts: adverts.length,
+        }
+      });
+      
+      res.status(200).json({ message: "Cuenta y datos relacionados eliminados correctamente"})
+
+      } catch (err) {
+        logDetailedError(err, req, "deleteuserProfile")
+        res.status(500).json ({ message: "Error al eliminar el perfil", error: err.message})
+  }
+};
+
+
 // Eliminar el perfil del usuario
-export const deleteUserProfile = async (req, res, next) => {
+export const deleteUserProfile_old = async (req, res, next) => {
   const userId = req.user.id;
 
   try {
@@ -305,8 +437,7 @@ export const deleteUserProfile = async (req, res, next) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    await User.findByIdAndDelete(userId);
-
+    //1. eliminacion del
     if (user.avatarUrl) {
       const publicId = extractPublicId(user.avatarUrl);
       if (publicId) {
@@ -315,6 +446,10 @@ export const deleteUserProfile = async (req, res, next) => {
         console.warn(`No se pudo extraer el public_id del avatar: ${user.avatarUrl}`);
       }
     }
+
+
+    await User.findByIdAndDelete(userId);
+
 
     res.status(200).json({ message: 'Cuenta eliminada' });
   } catch (err) {
@@ -792,7 +927,7 @@ export const createChat = async (req, res, next) => {
   const { listingId } = req.params;
   const userId = req.user.id; 
 
-  try {
+  try {d
     const advert = await Advert.findById(listingId);
     if (!advert) {
       return res.status(404).json({ message: 'Anuncio no encontrado' });
@@ -991,4 +1126,28 @@ export const sendVerificationEmail = async (user) => {
 
   // Enviar correo
   await transporter.sendMail(mailOptions);
+};
+
+
+export const updatePassword = async (req, res, next) => {
+  try{
+    const userId = req.user.id
+    const { currentPassword, newPassword} = req.body;
+
+    const user = await User.findById(userId);
+    if(!user) return res.status(404).json ({ message: "Usuario no encontrado"});
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if(!isMatch) return res.status(404).json({ message: "Cotraseña actual incorrecta" });
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = passwordHash;
+    user.updatedAt = Date.now();
+    await user.save();
+
+    res.status(200).json({ message: "Contraseña Actualizada Correctamente"})
+  } catch (err){
+    logDetailedError(err, req, 'updatePassword');
+    res.status(500).json({ message: "Error al actualizar la contraseña"})
+  }
 };

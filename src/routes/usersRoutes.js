@@ -22,7 +22,8 @@ import {
   createChat,
   sendMessageToChat,
   getUserChats,
-  getChatMessages
+  getChatMessages,
+  updatePassword
 } from '../controllers/usersController.js';
 
 
@@ -62,8 +63,8 @@ router.post('/me/chat/:listingId', verifyToken, loadUserIfAuthenticated, createC
 router.get('/me/chat/:chatId', verifyToken, loadUserIfAuthenticated, getChatMessages);  // Ver un chat en particular
 router.get('/me/chat', verifyToken, loadUserIfAuthenticated, getUserChats);  // Ver todas las conversaciones
 router.post('/me/chat/message/:chatId', verifyToken, loadUserIfAuthenticated, (req, res, next) => sendMessageToChat(req, res, next, req.app.get('io'), req.app.get('connectedUsers')));  // Mandar mensaje en un chat
-
-
+router.get('/me/chat/:chatId', verifyToken, loadUserIfAuthenticated, getChatMessages);  // Ver un chat en particular
+router.patch('/me/password', verifyToken, loadUserIfAuthenticated, updatePassword); // Actualizar la contraseña
 
 
 
