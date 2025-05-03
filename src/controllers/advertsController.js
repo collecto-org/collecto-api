@@ -10,6 +10,7 @@ import Brand from '../models/brand.js';
 import ProductType from '../models/productType.js';
 import Universe from "../models/universe.js"
 import Condition from "../models/condition.js"
+import Chat from '../models/chat.js';
 
 // Obtener todos los anuncios
 export const getAllAdverts = async (req, res, next) => {
@@ -738,6 +739,8 @@ export const deleteAdvert = async (req, res, next, io, connectedUsers) => {
       { favorites: id },                          /////////////////////////////////////////
       { $pull: { favorites: id } }                ///////////////////////////////////////
     );
+
+    await Chat.deleteMany({ advertId: id });
 
     await Advert.findByIdAndDelete(id);
 

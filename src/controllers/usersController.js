@@ -160,6 +160,7 @@ export const getCurrentUser = async (req, res, next) => {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       creationDate: user.createdAt,
+      ...(user.isAdmin && { isAdmin: true }),
     });
   } catch (err) {
    // next(err);
