@@ -1,6 +1,8 @@
 import { sendVerificationEmail, sendRecoverPasswordEmail, sendResetConfirmationEmail, sendNotificationEmail } from '../services/emailService.js';
 import dotenv from 'dotenv';
 import connectToRabbitMQ from '../jobs/emailQueue.js';
+import { sendEmailNotification } from '../utils/emailUtils.js';
+
 
 dotenv.config();
 
