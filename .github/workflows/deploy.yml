@@ -20,7 +20,6 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-              git clone https://github.com/collecto-org/collecto-api.git
               git pull origin main
               docker compose down
               docker compose up -d --build
