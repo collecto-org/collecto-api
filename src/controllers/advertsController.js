@@ -269,7 +269,6 @@ export const searchAdverts = async (req, res, next) => {
     //INICIO DE LA LOGICA PARA BUSCAR EN EL BUSCADOR
     let advertsWithPriority = [];  // Anuncios con prioridad (frase exacta)
     let advertsWithoutPriority = [];  // Anuncios sin prioridad (palabras sueltas)
-
     if (searchTerm) {
       const keywords = searchTerm.trim().split(/\s+/);
       const fullQuery = searchTerm.trim();
@@ -315,7 +314,7 @@ export const searchAdverts = async (req, res, next) => {
       let adverts = await Advert.find(queryFilter)
         .skip((page - 1) * limit)
         .limit(Number(limit))
-        .sort({ [sortBy]: sortOrder })
+        .sort([[sortBy, sortOrder]])  // Usar el array de arrays, como expliqué antes
         .populate('transaction')
         .populate('status')
         .populate('product_type')
@@ -392,7 +391,7 @@ export const searchAdverts = async (req, res, next) => {
     const adverts = await Advert.find(queryFilter)
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .sort({ [sortBy]: sortOrder })
+      .sort({ [sortBy]: Number(sortOrder) })
       .populate('transaction')
       .populate('status')
       .populate('product_type')
