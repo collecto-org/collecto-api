@@ -10,18 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Connect and deploy to EC2
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            rm -rf collecto-api
+            git clone git@github.com:collecto-org/collecto-api.git
+            cp .env ~/collecto-api/.env
+            cd collecto-api
             docker compose down
-            cd collecto-api || git clone https://github.com/collecto-org/collecto-api.git && cd collecto-api
-            git pull origin main
             docker compose up -d --build
+          EOF
 
