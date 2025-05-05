@@ -15,7 +15,7 @@ import Chat from '../models/chat.js';
 // Obtener todos los anuncios
 export const getAllAdverts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 12, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+    const { page = 1, limit = 12, sortBy = 'createdAt', sortOrder = -1 } = req.query;
 
     const allowedSortFields = ['price', 'createdAt', 'title'];
     const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
@@ -26,8 +26,8 @@ export const getAllAdverts = async (req, res, next) => {
     const availableStatusIds = availableStatuses.map(status => status._id);
 
     const adverts = await Advert.find({ status: { $in: availableStatusIds } })
-      .sort({ [sortField]: order })
-      .skip((page - 1) * limit)
+    .sort({ [sortBy]: Number(sortOrder) })
+    .skip((page - 1) * limit)
       .limit(Number(limit))
       .populate('transaction')
       .populate('status')
@@ -314,7 +314,7 @@ export const searchAdverts = async (req, res, next) => {
       let adverts = await Advert.find(queryFilter)
         .skip((page - 1) * limit)
         .limit(Number(limit))
-        .sort([[sortBy, sortOrder]])  // Usar el array de arrays, como expliqué antes
+        .sort({ [sortBy]: Number(sortOrder) })
         .populate('transaction')
         .populate('status')
         .populate('product_type')
