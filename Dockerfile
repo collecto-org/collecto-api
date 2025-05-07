@@ -13,4 +13,13 @@ COPY . .
 EXPOSE 3000
 
 # Comando por defecto para arrancar el backend
-CMD ["npm", "run", "dev"]
+
+# corrre en visual
+# CMD ["npm", "run", "dev"]       
+# CMD ["nodemon", "src/server.js"]
+
+
+# corre en ubuntu
+ CMD ["node", "src/server.js"]   
+
+

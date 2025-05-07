@@ -4,7 +4,7 @@ import connectToRabbitMQ from '../jobs/emailQueue.js';
 import { sendEmailNotification } from '../utils/emailUtils.js';
 
 
-dotenv.config();
+dotenv.config();      
 
 // Conectar a RabbitMQ y manejar los trabajos de la cola
 const processEmailQueue = async () => {

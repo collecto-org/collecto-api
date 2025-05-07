@@ -3,8 +3,8 @@ services:
     image: rabbitmq:management
     container_name: rabbitmq
     ports:
-      - "5672:5672"  # Puerto para la conexión AMQP
-      - "15672:15672"  # Puerto para el panel de administración web
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - app-network
     environment:
@@ -15,40 +15,27 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      - MONGO_URI=${MONGO_URI}
-      - JWT_SECRET=${JWT_SECRET}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASS=${EMAIL_PASS}
-      - FRONTEND_URL=${FRONTEND_URL}
-      - RABBITMQ_URL=amqp://rabbitmq
     ports:
       - "3000:3000"
+      - "4000:4000"
+    env_file: /home/ubuntu/.env
     depends_on:
       - rabbitmq
     networks:
       - app-network
     volumes:
       - .:/usr/src/app
+      - /usr/src/app/node_modules
 
   email-worker:
     build:
-      context: .
-      dockerfile: Dockerfile
-    command: ["node", "src/workers/emailWorker.js"]
-    environment:
-      - MONGO_URI=${MONGO_URI}
-      - JWT_SECRET=${JWT_SECRET}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASS=${EMAIL_PASS}
-      - FRONTEND_URL=${FRONTEND_URL}
-      - RABBITMQ_URL=amqp://rabbitmq
+      context: ./email-worker
+    command: ["node", "emailWorker.js"]
+    env_file: /home/ubuntu/.env
     depends_on:
       - rabbitmq
     networks:
       - app-network
-    volumes:
-      - .:/usr/src/app
     restart: always
 
 networks:
