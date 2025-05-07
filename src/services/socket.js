@@ -10,7 +10,6 @@ const activeUsersInRoom = new Map();
 
 export const initSocket = (server) => {
   const io = new Server(server, {
-    path: "/chat",
     connectionStateRecovery: {
       maxDisconnectionDuration: 4000,
     },
@@ -44,17 +43,16 @@ export const initSocket = (server) => {
   io.on("connection", (socket) => {
     connectedUsers.set(socket.user._id.toString(), socket.id);
 
-
     socket.on("active in chat", ({ roomId }) => {
       const set = activeUsersInRoom.get(roomId) || new Set();
-      set.add(socket.user.username); 
+      set.add(socket.user.username);
       activeUsersInRoom.set(roomId, set);
     });
 
     socket.on("inactive in chat", ({ roomId }) => {
       const set = activeUsersInRoom.get(roomId);
       if (set) {
-        set.delete(socket.user.username); 
+        set.delete(socket.user.username);
         if (set.size === 0) {
           activeUsersInRoom.delete(roomId);
         }
@@ -63,33 +61,51 @@ export const initSocket = (server) => {
 
     socket.on("joinRoom", async ({ roomId }) => {
       try {
-        const chatRoom = await Chat.findOne({ roomId });
-    
+        const [advertId, buyerUsername] = roomId.split("_");
+        const advert = await Advert.findById(advertId);
+        const owner = await User.findById(advert.user._id);
+
+        if (!advert) return socket.emit("error", "Anuncio no encontrado.");
+        if (!advert.user)
+          return socket.emit("error", "El anuncio no tiene propietario.");
+
+        let chatRoom = await Chat.findOne({ roomId });
+
         if (!chatRoom) {
-          return socket.emit("error", "Sala no encontrada.");
+          chatRoom = new Chat({
+            advertId,
+            roomId,
+            users: [socket.user._id, owner._id],
+            messages: [],
+          });
+
+          await chatRoom.save();
         }
-    
+
         const isUserInRoom = chatRoom.users.some(
           (u) => u.toString() === socket.user._id.toString()
         );
-    
+
         if (!isUserInRoom) {
-          return socket.emit("error", "No estás autorizado para unirte a esta sala.");
+          return socket.emit(
+            "error",
+            "No estás autorizado para unirte a esta sala."
+          );
         }
-    
+
         socket.join(roomId);
-    
+
         const populatedChatRoom = await Chat.findOne({ roomId }).populate({
           path: "messages.sender",
           select: "username",
         });
-    
+
         if (populatedChatRoom) {
           const formattedMessages = populatedChatRoom.messages.map((msg) => ({
             message: msg.content,
             username: msg.sender.username,
           }));
-    
+
           socket.emit("previousMessages", formattedMessages);
         }
       } catch (error) {
@@ -108,52 +124,59 @@ export const initSocket = (server) => {
       try {
         const { roomId, message } = msg;
         const [advertId, buyerUsername] = roomId.split("_");
-    
-        const buyer = socket.user.username === buyerUsername
-          ? socket.user
-          : await User.findOne({ username: buyerUsername });
-    
+
+        const buyer =
+          socket.user.username === buyerUsername
+            ? socket.user
+            : await User.findOne({ username: buyerUsername });
+
         const advert = await Advert.findById(advertId);
         const owner = await User.findById(advert.user._id);
-    
+
         let sender;
         if (socket.user.username === buyer.username) {
           sender = buyer._id;
         } else {
           sender = owner._id;
         }
-    
+
         let receiver;
         if (socket.user.username === buyer.username) {
           receiver = owner;
         } else {
           receiver = buyer;
         }
-    
+
         let chatRoom = await Chat.findOne({
           advertId,
           users: { $all: [buyer._id, owner._id] },
         });
-    
+
         if (!chatRoom) {
-          return socket.emit("error", "No tienes permiso para enviar mensajes en esta sala.");
+          return socket.emit(
+            "error",
+            "No tienes permiso para enviar mensajes en esta sala."
+          );
         }
-    
+
         const isUserInRoom = chatRoom.users.some(
           (u) => u.toString() === socket.user._id.toString()
         );
-    
+
         if (!isUserInRoom) {
-          return socket.emit("error", "No estás autorizado para enviar mensajes en esta sala.");
+          return socket.emit(
+            "error",
+            "No estás autorizado para enviar mensajes en esta sala."
+          );
         }
-    
+
         if (!message || message.trim() === "") {
           return;
         }
-    
+
         const activeUsers = activeUsersInRoom.get(roomId);
         const receiverIsActive = activeUsers?.has(receiver.username);
-    
+
         chatRoom.messages.push({
           sender,
           receiver: receiver._id,
@@ -161,7 +184,7 @@ export const initSocket = (server) => {
           isRead: receiverIsActive || false,
         });
         await chatRoom.save();
-    
+
         const populatedChatRoom = await Chat.findById(chatRoom._id)
           .populate({
             path: "messages.sender",
@@ -180,24 +203,23 @@ export const initSocket = (server) => {
             select: "title ",
           })
           .lean();
-    
+
         const receiverSocketId = connectedUsers.get(receiver._id.toString());
         const senderSocketId = connectedUsers.get(sender.toString());
-    
+
         if (receiverSocketId) {
           io.to(receiverSocketId).emit("chat message", populatedChatRoom);
         }
         if (senderSocketId) {
           io.to(senderSocketId).emit("chat message", populatedChatRoom);
         }
-    
+
         io.to(roomId).emit("chat message", {
           roomId,
           message,
           username: socket.user.username,
           createdAt: new Date(),
         });
-    
       } catch (error) {
         console.log("error al enviar el mensaje", error);
         socket.emit("error", "Error al enviar el mensaje.");
