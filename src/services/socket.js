@@ -10,7 +10,6 @@ const activeUsersInRoom = new Map();
 
 export const initSocket = (server) => {
   const io = new Server(server, {
-    path: "/chat",
     connectionStateRecovery: {
       maxDisconnectionDuration: 4000,
     },
