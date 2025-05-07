@@ -483,7 +483,9 @@ export const getOwnAdverts = async (req, res, next) => {
     product_type, 
     universe, 
     condition, 
-    slug 
+    slug ,
+    sortBy = 'createdAt',
+    sortOrder = -1,
   } = req.query;
 
   try {
@@ -515,6 +517,7 @@ export const getOwnAdverts = async (req, res, next) => {
     const adverts = await Advert.find(query)
       .skip((page - 1) * limit)
       .limit(Number(limit))
+      .sort({ [sortBy]: Number(sortOrder) })
       .populate('user', 'username avatarUrl -_id')
       .populate('transaction')
       .populate('status')
@@ -562,7 +565,9 @@ export const getUserFavorites = async (req, res, next) => {
       product_type, 
       universe, 
       condition, 
-      slug, 
+      slug,
+      sortBy = 'createdAt',
+      sortOrder = -1,
     } = req.query;
 
     const user = await User.findById(userId);
@@ -602,6 +607,7 @@ export const getUserFavorites = async (req, res, next) => {
     const adverts = await Advert.find(query)
       .skip((page - 1) * limit)
       .limit(Number(limit))
+      .sort({ [sortBy]: Number(sortOrder) })
       .populate('user', 'username avatarUrl -_id')
       .populate('transaction')
       .populate('status')
