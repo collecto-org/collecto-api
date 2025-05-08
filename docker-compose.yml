@@ -18,7 +18,7 @@ services:
     ports:
       - "3000:3000"
       - "4000:4000"
-    env_file: /home/ubuntu/.env
+    #env_file: /home/ubuntu/.env
     depends_on:
       - rabbitmq
     networks:
@@ -31,7 +31,7 @@ services:
     build:
       context: ./email-worker
     command: ["node", "emailWorker.js"]
-    env_file: /home/ubuntu/.env
+    #env_file: /home/ubuntu/.env
     depends_on:
       - rabbitmq
     networks:

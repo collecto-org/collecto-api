@@ -56,7 +56,7 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 //app.use(cors({ origin: "http://localhost:5173", credentials: true })); // Habilitar CORS para el frontend en localhost:5173  (Ojo!! Cambiar a la URL de producción en el futuro)
 
-app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
+ app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
 
 
 app.use("/api/auth", authRoutes); // Autenticación y gestión de sesión
@@ -130,10 +130,10 @@ const { io, connectedUsers } = initSocket(server)
 app.set('io', io);
 app.set('connectedUsers', connectedUsers);
 
-server.listen(process.env.SOCKETS_PORT, () => {
-  console.log(`Servidor de sockets escuchando en el puerto ${process.env.SOCKETS_PORT}`);
-});
+//server.listen(process.env.SOCKETS_PORT, () => {
+//  console.log(`Servidor de sockets escuchando en el puerto ${process.env.SOCKETS_PORT}`);
+//});
 
-// server.listen(process.env.SOCKETS_PORT, () => { // servidor de webSockets
-//   console.log("servidor de shockets escuchando en http://localhost:4000");
-// });
+ server.listen(process.env.SOCKETS_PORT, () => { // servidor de webSockets
+   console.log("servidor de shockets escuchando en http://localhost:4000");
+ });
